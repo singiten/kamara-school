@@ -1,3 +1,4 @@
+// frontend/tsconfig.app.json
 {
   "compilerOptions": {
     "target": "ES2020",
@@ -7,20 +8,19 @@
     "skipLibCheck": true,
     "allowJs": true,
     "checkJs": false,
-
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-
     "strict": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": false,
     "noImplicitAny": false,
-    "strictNullChecks": false
+    "strictNullChecks": false,
+    "types": ["vite/client"]
   },
   "include": ["src"]
 }
