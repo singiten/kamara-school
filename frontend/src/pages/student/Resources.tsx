@@ -1,5 +1,3 @@
-// src/pages/student/Resources.tsx - Student View Resources
-
 import { useState, useEffect } from "react";
 import {
     FileText,
@@ -12,7 +10,7 @@ import {
     List,
 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Resource {
     _id: string;
@@ -55,16 +53,13 @@ const StudentResources = () => {
 
     const fetchResources = async () => {
         try {
-            const token = localStorage.getItem('token');
-            let url = 'http://localhost:7000/api/resources';
+            let url = '/api/resources';
             const params = new URLSearchParams();
             if (filterSubject) params.append('subject', filterSubject);
             if (filterClassLevel) params.append('classLevel', filterClassLevel);
             if (params.toString()) url += `?${params.toString()}`;
 
-            const response = await axios.get(url, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get(url);
             setResources(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -75,9 +70,7 @@ const StudentResources = () => {
 
     const handleDownload = async (id: string, fileName: string) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:7000/api/resources/${id}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await apiClient.get(`/api/resources/${id}/download`, {
                 responseType: 'blob',
             });
 
@@ -154,7 +147,6 @@ const StudentResources = () => {
     return (
         <DashboardLayout role="student">
             <div className="max-w-6xl mx-auto space-y-6">
-                {/* Header */}
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <BookOpen size={24} className="text-blue-600" />
@@ -163,7 +155,6 @@ const StudentResources = () => {
                     <p className="text-gray-500">Access learning materials shared by your teachers</p>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                         <p className="text-gray-500 text-sm">Total Resources</p>
@@ -191,7 +182,6 @@ const StudentResources = () => {
                     </div>
                 </div>
 
-                {/* Search & Filter */}
                 <div className="bg-white rounded-xl shadow-sm p-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 relative">
@@ -255,7 +245,6 @@ const StudentResources = () => {
                     </div>
                 </div>
 
-                {/* Resources Display */}
                 {filteredResources.length === 0 ? (
                     <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                         <FileText size={48} className="mx-auto text-gray-300 mb-4" />
@@ -263,7 +252,6 @@ const StudentResources = () => {
                         <p className="text-gray-500">Your teachers haven't uploaded any resources yet.</p>
                     </div>
                 ) : viewMode === "grid" ? (
-                    // Grid View
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredResources.map((resource) => {
                             const fileInfo = getFileIcon(resource.fileType);
@@ -272,12 +260,10 @@ const StudentResources = () => {
                                     key={resource._id}
                                     className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all overflow-hidden group"
                                 >
-                                    {/* File Icon */}
                                     <div className={`p-4 flex items-center justify-center ${fileInfo.color.replace('text-', 'bg-').replace('700', '50')}`}>
                                         <span className="text-4xl">{fileInfo.icon}</span>
                                     </div>
 
-                                    {/* Content */}
                                     <div className="p-4">
                                         <h3 className="font-semibold text-gray-800 line-clamp-1">{resource.title}</h3>
                                         <p className="text-sm text-gray-500 line-clamp-2 mt-1">{resource.description || 'No description'}</p>
@@ -318,7 +304,6 @@ const StudentResources = () => {
                         })}
                     </div>
                 ) : (
-                    // List View
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse">
@@ -371,7 +356,6 @@ const StudentResources = () => {
                     </div>
                 )}
 
-                {/* Footer */}
                 <div className="text-center text-sm text-gray-400">
                     {filteredResources.length} resource{filteredResources.length !== 1 ? 's' : ''} available
                 </div>

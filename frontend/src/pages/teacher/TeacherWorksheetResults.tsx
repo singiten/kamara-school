@@ -1,9 +1,8 @@
-// src/pages/teacher/WorksheetResults.tsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, Award, TrendingUp, PieChart, Clock, FileText, Download, X } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Attempt {
     _id: string;
@@ -58,10 +57,7 @@ const TeacherWorksheetResults = () => {
 
     const fetchResults = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:7000/api/worksheets/${id}/results`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get(`/api/worksheets/${id}/results`);
             setData(response.data.data);
             setLoading(false);
         } catch (error: any) {
@@ -116,7 +112,6 @@ const TeacherWorksheetResults = () => {
     return (
         <DashboardLayout role="teacher">
             <div className="space-y-6">
-                {/* Header */}
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate('/teacher/worksheets')}
@@ -130,7 +125,6 @@ const TeacherWorksheetResults = () => {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-4">
                         <div className="flex items-center gap-2 text-gray-500">
@@ -166,7 +160,6 @@ const TeacherWorksheetResults = () => {
                     </div>
                 </div>
 
-                {/* Student List */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b flex justify-between items-center">
                         <h2 className="text-lg font-semibold text-gray-800">Student Results</h2>
@@ -230,7 +223,6 @@ const TeacherWorksheetResults = () => {
                 </div>
             </div>
 
-            {/* Student Details Modal */}
             {selectedStudent && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedStudent(null)}>
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>

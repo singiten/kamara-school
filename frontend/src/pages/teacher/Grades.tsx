@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, X, Edit2, BarChart3 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Assessment {
     score: number;
@@ -25,7 +25,7 @@ interface GradeRecord {
     totalScore?: number;
     letterGrade?: string;
     gradePoints?: number;
-     classId?: {          
+    classId?: {
         _id: string;
         name: string;
     };
@@ -106,13 +106,9 @@ const Grades = () => {
 
     const fetchGradeData = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
             let classId = formData.classId;
             if (!classId) {
-                const classesRes = await axios.get('http://localhost:7000/api/classes', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const classesRes = await apiClient.get('/api/classes');
                 const classList = classesRes.data.data || [];
                 setClasses(classList);
                 if (classList.length > 0) {
@@ -122,38 +118,31 @@ const Grades = () => {
             }
             
             if (!classId) {
-                console.log("❌ No class found");
+                console.log("No class found");
                 setLoading(false);
                 return;
             }
             
             const academicYear = formData.academicYear || "2024/25";
             
-            const gradesRes = await axios.get(
-                `http://localhost:7000/api/grades/class/${classId}?semester=Semester%201&academicYear=${academicYear}`,
-                { headers: { Authorization: `Bearer ${token}` } }
+            const gradesRes = await apiClient.get(
+                `/api/grades/class/${classId}?semester=Semester%201&academicYear=${academicYear}`
             );
             
             setGradeRecords(gradesRes.data.data || []);
             setLoading(false);
         } catch (error) {
-            console.error("❌ Error fetching grades:", error);
+            console.error("Error fetching grades:", error);
             setLoading(false);
         }
     };
 
     const fetchStudentsAndClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            const studentsRes = await axios.get('http://localhost:7000/api/users?role=student', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const studentsRes = await apiClient.get('/api/users?role=student');
             setStudents(studentsRes.data.data || []);
 
-            const classesRes = await axios.get('http://localhost:7000/api/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const classesRes = await apiClient.get('/api/classes');
             setClasses(classesRes.data.data || []);
             
             if (classesRes.data.data && classesRes.data.data.length > 0) {
@@ -166,28 +155,26 @@ const Grades = () => {
 
     const forceRefreshGrades = async () => {
         try {
-            const token = localStorage.getItem('token');
             let classId = formData.classId;
             
             if (!classId) {
                 if (classes.length > 0) {
                     classId = classes[0]._id;
                 } else {
-                    console.log("❌ No classes available");
+                    console.log("No classes available");
                     return;
                 }
             }
             
             const academicYear = formData.academicYear || "2024/25";
             
-            const gradesRes = await axios.get(
-                `http://localhost:7000/api/grades/class/${classId}?semester=Semester%201&academicYear=${academicYear}`,
-                { headers: { Authorization: `Bearer ${token}` } }
+            const gradesRes = await apiClient.get(
+                `/api/grades/class/${classId}?semester=Semester%201&academicYear=${academicYear}`
             );
             
             setGradeRecords(gradesRes.data.data || []);
         } catch (error) {
-            console.error("❌ Error refreshing grades:", error);
+            console.error("Error refreshing grades:", error);
         }
     };
 
@@ -195,8 +182,6 @@ const Grades = () => {
         e.preventDefault();
         
         try {
-            const token = localStorage.getItem('token');
-            
             const allFilled = formData.assessments.quiz.score > 0 &&
                               formData.assessments.homework.score > 0 &&
                               formData.assessments.classTest.score > 0 &&
@@ -220,20 +205,18 @@ const Grades = () => {
                 }
             };
 
-            await axios.post('http://localhost:7000/api/grades', gradeData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.post('/api/grades', gradeData);
 
             setShowModal(false);
             resetForm();
             await forceRefreshGrades();
             
             alert(allFilled 
-                ? '✅ Grade saved successfully! The student can now see their complete grade.' 
-                : '⏳ Grade saved as incomplete. The final grade will be calculated when all assessments are filled.');
+                ? 'Grade saved successfully! The student can now see their complete grade.' 
+                : 'Grade saved as incomplete. The final grade will be calculated when all assessments are filled.');
             
         } catch (error: any) {
-            console.error("❌ Error adding grade:", error);
+            console.error("Error adding grade:", error);
             alert(error.response?.data?.error || "Failed to add grade");
         }
     };
@@ -244,8 +227,6 @@ const Grades = () => {
         if (!editingGrade) return;
         
         try {
-            const token = localStorage.getItem('token');
-            
             const allFilled = formData.assessments.quiz.score > 0 &&
                               formData.assessments.homework.score > 0 &&
                               formData.assessments.classTest.score > 0 &&
@@ -269,9 +250,7 @@ const Grades = () => {
                 }
             };
 
-            await axios.put(`http://localhost:7000/api/grades/${editingGrade._id}`, gradeData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.put(`/api/grades/${editingGrade._id}`, gradeData);
 
             setShowEditModal(false);
             setEditingGrade(null);
@@ -279,11 +258,11 @@ const Grades = () => {
             await forceRefreshGrades();
             
             alert(allFilled 
-                ? '✅ Grade updated successfully! The student can now see their complete grade.' 
-                : '⏳ Grade updated as incomplete. The final grade will be calculated when all assessments are filled.');
+                ? 'Grade updated successfully! The student can now see their complete grade.' 
+                : 'Grade updated as incomplete. The final grade will be calculated when all assessments are filled.');
             
         } catch (error: any) {
-            console.error("❌ Error updating grade:", error);
+            console.error("Error updating grade:", error);
             alert(error.response?.data?.error || "Failed to update grade");
         }
     };
@@ -389,7 +368,7 @@ const Grades = () => {
 
         return (
             <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">📊 Assessment Breakdown</h4>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Assessment Breakdown</h4>
                 
                 {!allComplete && (
                     <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
@@ -426,7 +405,7 @@ const Grades = () => {
                         <span className="text-gray-600 dark:text-gray-300">GPA: <strong className="text-gray-800 dark:text-gray-100">{grade.gradePoints?.toFixed(1) || 'N/A'}</strong></span>
                     </div>
                 ) : (
-                        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 italic">
+                    <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 italic">
                         ⏳ Waiting for {pendingAssessments.join(', ')} to calculate final grade.
                     </div>
                 )}
@@ -547,7 +526,7 @@ const Grades = () => {
 
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">📊 Assessment Scores</h4>
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Assessment Scores</h4>
                             <span className={`text-xs px-2 py-1 rounded-full ${
                                 formData.assessments.quiz.score > 0 &&
                                 formData.assessments.homework.score > 0 &&
@@ -675,19 +654,19 @@ const Grades = () => {
                              formData.assessments.classTest.score > 0 &&
                              formData.assessments.finalTest.score > 0 &&
                              formData.assessments.groupWork.score > 0 ? (
-                                    <div className="text-green-700 dark:text-green-400">✅ All assessments complete. Grade will be calculated.</div>
+                                <div className="text-green-700 dark:text-green-400">✅ All assessments complete. Grade will be calculated.</div>
                             ) : (
-                                    <div className="text-yellow-700 dark:text-yellow-400">
+                                <div className="text-yellow-700 dark:text-yellow-400">
                                     ⏳ <span className="font-medium">Incomplete Grade</span> — Fill all assessment fields to calculate final grade.
-                                        <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">Missing: {
-                                        [
-                                            !formData.assessments.quiz.score && 'Quiz',
-                                            !formData.assessments.homework.score && 'Homework',
-                                            !formData.assessments.classTest.score && 'Class Test',
-                                            !formData.assessments.finalTest.score && 'Final Test',
-                                            !formData.assessments.groupWork.score && 'Group Work'
-                                        ].filter(Boolean).join(', ') || 'All fields filled'
-                                    }</span>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">Missing: {
+                                    [
+                                        !formData.assessments.quiz.score && 'Quiz',
+                                        !formData.assessments.homework.score && 'Homework',
+                                        !formData.assessments.classTest.score && 'Class Test',
+                                        !formData.assessments.finalTest.score && 'Final Test',
+                                        !formData.assessments.groupWork.score && 'Group Work'
+                                    ].filter(Boolean).join(', ') || 'All fields filled'
+                                }</span>
                                 </div>
                             )}
                         </div>
@@ -801,7 +780,7 @@ const Grades = () => {
 
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">📊 Assessment Scores</h4>
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Assessment Scores</h4>
                             <span className={`text-xs px-2 py-1 rounded-full ${
                                 formData.assessments.quiz.score > 0 &&
                                 formData.assessments.homework.score > 0 &&
@@ -929,19 +908,19 @@ const Grades = () => {
                              formData.assessments.classTest.score > 0 &&
                              formData.assessments.finalTest.score > 0 &&
                              formData.assessments.groupWork.score > 0 ? (
-                                    <div className="text-green-700 dark:text-green-400">✅ All assessments complete. Grade will be calculated.</div>
+                                <div className="text-green-700 dark:text-green-400">✅ All assessments complete. Grade will be calculated.</div>
                             ) : (
-                                    <div className="text-yellow-700 dark:text-yellow-400">
+                                <div className="text-yellow-700 dark:text-yellow-400">
                                     ⏳ <span className="font-medium">Incomplete Grade</span> — Fill all assessment fields to calculate final grade.
-                                        <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">Missing: {
-                                        [
-                                            !formData.assessments.quiz.score && 'Quiz',
-                                            !formData.assessments.homework.score && 'Homework',
-                                            !formData.assessments.classTest.score && 'Class Test',
-                                            !formData.assessments.finalTest.score && 'Final Test',
-                                            !formData.assessments.groupWork.score && 'Group Work'
-                                        ].filter(Boolean).join(', ') || 'All fields filled'
-                                    }</span>
+                                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">Missing: {
+                                    [
+                                        !formData.assessments.quiz.score && 'Quiz',
+                                        !formData.assessments.homework.score && 'Homework',
+                                        !formData.assessments.classTest.score && 'Class Test',
+                                        !formData.assessments.finalTest.score && 'Final Test',
+                                        !formData.assessments.groupWork.score && 'Group Work'
+                                    ].filter(Boolean).join(', ') || 'All fields filled'
+                                }</span>
                                 </div>
                             )}
                         </div>
@@ -1035,7 +1014,7 @@ const Grades = () => {
                                                             ✅ Complete
                                                         </span>
                                                     ) : (
-                                                            <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium">
+                                                        <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium">
                                                             ⏳ Pending
                                                         </span>
                                                     )}

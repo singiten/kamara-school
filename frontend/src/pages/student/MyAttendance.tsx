@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Calendar, CheckCircle, XCircle, Clock, AlertCircle, BarChart3 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface SummaryData {
     present: number;
@@ -37,11 +37,7 @@ const MyAttendance = () => {
 
     const fetchAttendanceSummary = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(
-                'http://localhost:7000/api/attendance/my-summary',
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get('/api/attendance/my-summary');
 
             if (response.data.success) {
                 setOverall(response.data.data.overall);
@@ -118,7 +114,6 @@ const MyAttendance = () => {
                     <p className="text-gray-500">View your attendance summary</p>
                 </div>
 
-                {/* Overall Stats Cards */}
                 {overall && (
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="bg-white rounded-xl shadow-sm p-4 text-center border-l-4 border-green-500">
@@ -144,7 +139,6 @@ const MyAttendance = () => {
                     </div>
                 )}
 
-                {/* Period Filter */}
                 <div className="bg-white rounded-xl shadow-sm p-4">
                     <div className="flex flex-wrap items-center gap-4">
                         <label className="font-medium text-gray-700">Filter by Period:</label>
@@ -162,7 +156,6 @@ const MyAttendance = () => {
                     </div>
                 </div>
 
-                {/* Breakdown Table */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b">
                         <h2 className="text-lg font-semibold text-gray-800">
@@ -220,7 +213,6 @@ const MyAttendance = () => {
                     </div>
                 </div>
 
-                {/* Info Note */}
                 <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 text-sm text-blue-700">
                     💡 Your attendance is summarized weekly. Daily records are removed after summarization to keep the system fast and efficient.
                 </div>

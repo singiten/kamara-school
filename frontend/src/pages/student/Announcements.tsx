@@ -1,9 +1,7 @@
-// src/pages/student/Announcements.tsx - ENHANCED UI
-
 import { useState, useEffect } from "react";
 import { Megaphone, Calendar, Clock, AlertCircle, Bell, Users, Sparkles, ChevronRight } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Announcement {
     _id: string;
@@ -48,10 +46,7 @@ const StudentAnnouncements = () => {
 
     const fetchAnnouncements = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/announcements', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/announcements');
             setAnnouncements(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -96,7 +91,6 @@ const StudentAnnouncements = () => {
     return (
         <DashboardLayout role="student">
             <div className="max-w-4xl mx-auto space-y-6">
-                {/* Header */}
                 <div className="flex items-center gap-4">
                     <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl">
                         <Megaphone size={24} className="text-white" />
@@ -107,7 +101,6 @@ const StudentAnnouncements = () => {
                     </div>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                         <p className="text-gray-500 text-sm">Total</p>
@@ -121,7 +114,6 @@ const StudentAnnouncements = () => {
                     </div>
                 </div>
 
-                {/* Announcements List */}
                 {announcements.length === 0 ? (
                     <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
                         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

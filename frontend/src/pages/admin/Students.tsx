@@ -1,9 +1,9 @@
-// src/pages/registrar/RegistrarStudents.tsx - WITH GRADE & SECTION DROPDOWNS
+// src/pages/registrar/RegistrarStudents.tsx - WITH apiClient
 
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Search, UserPlus, X, Check, Users } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Student {
     _id: string;
@@ -30,7 +30,6 @@ interface Class {
     academicYear: string;
 }
 
-// ✅ Predefined values
 const GRADES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
 const SECTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
@@ -61,12 +60,10 @@ const RegistrarStudents = () => {
         fetchClasses();
     }, []);
 
+    // ✅ Use apiClient
     const fetchStudents = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/registrar/students', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/registrar/students');
             setStudents(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -76,19 +73,16 @@ const RegistrarStudents = () => {
         }
     };
 
+    // ✅ Use apiClient
     const fetchClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/registrar/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/registrar/classes');
             setClasses(response.data.data || []);
         } catch (error) {
             console.error("Error fetching classes:", error);
         }
     };
 
-    // ✅ Generate class name from grade + section
     const generateClassName = (grade: string, section: string) => {
         if (grade && section) {
             return `Grade ${grade}${section}`;
@@ -96,16 +90,13 @@ const RegistrarStudents = () => {
         return "";
     };
 
-    // ✅ Find existing class by grade and section
     const findExistingClass = (grade: string, section: string) => {
         return classes.find(c => c.grade === grade && c.section === section);
     };
 
-    // ✅ Handle grade or section change
     const handleGradeOrSectionChange = (field: string, value: string) => {
         const newFormData = { ...formData, [field]: value };
 
-        // If both grade and section are selected, check if class exists
         const grade = field === 'grade' ? value : formData.grade;
         const section = field === 'section' ? value : formData.section;
 
@@ -121,24 +112,21 @@ const RegistrarStudents = () => {
         setFormData(newFormData);
     };
 
+    // ✅ Use apiClient
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // ✅ Validate grade and section
         if (!formData.grade || !formData.section) {
             alert('Please select both grade and section');
             return;
         }
 
         try {
-            const token = localStorage.getItem('token');
-
-            // ✅ Use existing class name or generate one
             const className = formData.classId
                 ? classes.find(c => c._id === formData.classId)?.name || generateClassName(formData.grade, formData.section)
                 : generateClassName(formData.grade, formData.section);
 
-            const response = await axios.post('http://localhost:7000/api/registrar/students', {
+            const response = await apiClient.post('/api/registrar/students', {
                 name: formData.name,
                 email: formData.email,
                 password: formData.password,
@@ -147,8 +135,6 @@ const RegistrarStudents = () => {
                 parentName: formData.parentName,
                 parentPhone: formData.parentPhone,
                 parentEmail: formData.parentEmail,
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             setShowModal(false);
@@ -156,7 +142,6 @@ const RegistrarStudents = () => {
             setSuccessMessage(response.data.message || '✅ Student registered successfully!');
             fetchStudents();
 
-            // Reset form
             setFormData({
                 name: "",
                 email: "",
@@ -179,13 +164,11 @@ const RegistrarStudents = () => {
         }
     };
 
+    // ✅ Use apiClient
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this student?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:7000/api/registrar/students/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.delete(`/api/registrar/students/${id}`);
             fetchStudents();
             alert('✅ Student deleted successfully!');
         } catch (error: any) {
@@ -221,7 +204,6 @@ const RegistrarStudents = () => {
     return (
         <DashboardLayout role="admin">
             <div className="space-y-6">
-                {/* Success Message */}
                 {success && (
                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-green-700 dark:text-green-400 flex items-center gap-3">
                         <Check size={24} />
@@ -231,7 +213,6 @@ const RegistrarStudents = () => {
                     </div>
                 )}
 
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Student Management</h1>
@@ -246,7 +227,6 @@ const RegistrarStudents = () => {
                     </button>
                 </div>
 
-                {/* Search Bar */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
                     <div className="relative">
                         <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -260,7 +240,6 @@ const RegistrarStudents = () => {
                     </div>
                 </div>
 
-                {/* Students Table */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
@@ -320,7 +299,6 @@ const RegistrarStudents = () => {
                     </div>
                 </div>
 
-                {/* ✅ Enhanced Modal with Grade & Section Dropdowns */}
                 {showModal && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -335,7 +313,6 @@ const RegistrarStudents = () => {
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                {/* Personal Information Section */}
                                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                                     <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Personal Information</h3>
                                     <div className="grid grid-cols-2 gap-4">
@@ -363,7 +340,6 @@ const RegistrarStudents = () => {
                                         </div>
                                     </div>
 
-                                    {/* ✅ Grade & Section Dropdowns */}
                                     <div className="grid grid-cols-2 gap-4 mt-3">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grade *</label>
@@ -395,7 +371,6 @@ const RegistrarStudents = () => {
                                         </div>
                                     </div>
 
-                                    {/* ✅ Show class assignment status */}
                                     {formData.grade && formData.section && (
                                         <div className={`mt-2 p-2 rounded-lg text-sm ${formData.classId
                                             ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
@@ -446,7 +421,6 @@ const RegistrarStudents = () => {
                                     </div>
                                 </div>
 
-                                {/* Parent Information Section */}
                                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                                     <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-3">Parent Information</h3>
                                     <div className="grid grid-cols-2 gap-4">

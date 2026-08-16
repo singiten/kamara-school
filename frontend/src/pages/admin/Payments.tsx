@@ -1,9 +1,9 @@
-// src/pages/finance/FinancePayments.tsx - COMPLETE WITH VIEW MODAL
+// src/pages/finance/FinancePayments.tsx - WITH apiClient
 
 import { useState, useEffect } from "react";
 import { Check, X, Eye, Download, AlertCircle, Banknote, Users, FileText } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Payment {
     _id: string;
@@ -58,7 +58,6 @@ const FinancePayments = () => {
     const [success, setSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
 
-    // ✅ View Modal State
     const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
     const [showViewModal, setShowViewModal] = useState(false);
     const [viewLoading, setViewLoading] = useState(false);
@@ -68,16 +67,14 @@ const FinancePayments = () => {
         fetchStats();
     }, []);
 
+    // ✅ Use apiClient
     const fetchPayments = async () => {
         try {
-            const token = localStorage.getItem('token');
             const url = filter === 'all'
-                ? 'http://localhost:7000/api/finance/payments'
-                : `http://localhost:7000/api/finance/payments?status=${filter}`;
+                ? '/api/finance/payments'
+                : `/api/finance/payments?status=${filter}`;
 
-            const response = await axios.get(url, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get(url);
             setPayments(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -87,12 +84,10 @@ const FinancePayments = () => {
         }
     };
 
+    // ✅ Use apiClient
     const fetchStats = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/finance/revenue', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/finance/revenue');
             setStats(response.data.data || {
                 pending: 0,
                 confirmed: 0,
@@ -104,15 +99,11 @@ const FinancePayments = () => {
         }
     };
 
-    // ✅ View Payment Details
+    // ✅ Use apiClient
     const handleViewPayment = async (paymentId: string) => {
         try {
             setViewLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await axios.get(
-                `http://localhost:7000/api/finance/payments/${paymentId}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get(`/api/finance/payments/${paymentId}`);
             setSelectedPayment(response.data.data);
             setShowViewModal(true);
             setViewLoading(false);
@@ -123,13 +114,11 @@ const FinancePayments = () => {
         }
     };
 
+    // ✅ Use apiClient
     const handleApprove = async (id: string) => {
         if (!window.confirm("Are you sure you want to approve this payment?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:7000/api/finance/payments/${id}/confirm`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.put(`/api/finance/payments/${id}/confirm`, {});
             setSuccess(true);
             setSuccessMessage("✅ Payment approved successfully!");
             fetchPayments();
@@ -143,16 +132,13 @@ const FinancePayments = () => {
         }
     };
 
+    // ✅ Use apiClient
     const handleReject = async (id: string) => {
         const reason = prompt("Please enter rejection reason:");
         if (reason === null) return;
         if (!window.confirm("Are you sure you want to reject this payment?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:7000/api/finance/payments/${id}/reject`,
-                { reason: reason || "Payment rejected" },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await apiClient.put(`/api/finance/payments/${id}/reject`, { reason: reason || "Payment rejected" });
             setSuccess(true);
             setSuccessMessage("❌ Payment rejected!");
             fetchPayments();
@@ -321,7 +307,6 @@ const FinancePayments = () => {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex gap-2">
-                                                    {/* ✅ View Button - Opens Modal */}
                                                     <button
                                                         onClick={() => handleViewPayment(payment._id)}
                                                         className="p-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
@@ -391,7 +376,6 @@ const FinancePayments = () => {
                         </div>
 
                         <div className="p-5 space-y-4">
-                            {/* Payment Info */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Student</p>
@@ -472,7 +456,7 @@ const FinancePayments = () => {
                                 {selectedPayment.screenshotUrl ? (
                                     <div className="border rounded-lg overflow-hidden">
                                         <img
-                                            src={`http://localhost:7000${selectedPayment.screenshotUrl}`}
+                                            src={`${apiClient.defaults.baseURL}${selectedPayment.screenshotUrl}`}
                                             alt="Payment Screenshot"
                                             className="w-full max-h-96 object-contain"
                                             onError={(e) => {
@@ -481,7 +465,7 @@ const FinancePayments = () => {
                                         />
                                         <div className="bg-gray-50 dark:bg-gray-700 p-2 text-center">
                                             <a
-                                                href={`http://localhost:7000${selectedPayment.screenshotUrl}`}
+                                                href={`${apiClient.defaults.baseURL}${selectedPayment.screenshotUrl}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-600 hover:text-blue-800 text-sm flex items-center justify-center gap-1"

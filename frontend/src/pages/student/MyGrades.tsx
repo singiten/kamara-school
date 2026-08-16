@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { GraduationCap, BookOpen, Trophy, Filter, BarChart3, PieChart } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Assessment {
     score: number;
@@ -49,11 +49,7 @@ const MyGrades = () => {
 
     const fetchMyGrades = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            const response = await axios.get('http://localhost:7000/api/grades/my-grades', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/grades/my-grades');
 
             const grades: GradeRecord[] = response.data.data || [];
             setGradeRecords(grades);
@@ -138,82 +134,78 @@ const MyGrades = () => {
         setExpandedGrade(expandedGrade === id ? null : id);
     };
 
-   
-const renderAssessmentBreakdown = (grade: GradeRecord) => {
-    if (!grade.assessments) return null;
+    const renderAssessmentBreakdown = (grade: GradeRecord) => {
+        if (!grade.assessments) return null;
 
-    const assessments = grade.assessments;
-    const keys = ['quiz', 'homework', 'classTest', 'finalTest', 'groupWork'];
-    const allComplete = keys.every(key => assessments[key as keyof typeof assessments]?.score > 0);
-    
-    // ✅ Get pending assessments
-    const pendingAssessments = keys
-        .filter(key => assessments[key as keyof typeof assessments]?.score === 0)
-        .map(key => {
-            const labels: Record<string, string> = {
-                quiz: 'Quiz',
-                homework: 'Homework',
-                classTest: 'Class Test',
-                finalTest: 'Final Test',
-                groupWork: 'Group Work',
-            };
-            return labels[key] || key;
-        });
+        const assessments = grade.assessments;
+        const keys = ['quiz', 'homework', 'classTest', 'finalTest', 'groupWork'];
+        const allComplete = keys.every(key => assessments[key as keyof typeof assessments]?.score > 0);
+        
+        const pendingAssessments = keys
+            .filter(key => assessments[key as keyof typeof assessments]?.score === 0)
+            .map(key => {
+                const labels: Record<string, string> = {
+                    quiz: 'Quiz',
+                    homework: 'Homework',
+                    classTest: 'Class Test',
+                    finalTest: 'Final Test',
+                    groupWork: 'Group Work',
+                };
+                return labels[key] || key;
+            });
 
-    return (
-        <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">📊 Assessment Breakdown</h4>
-            
-            {/* ✅ Show status message */}
-            {!allComplete && (
-                <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
-                    ⚠️ <span className="font-medium">Incomplete Grade</span> — Missing: {pendingAssessments.join(', ')}
-                    <span className="block text-xs text-yellow-600 mt-1">This grade will be calculated once all assessments are entered.</span>
+        return (
+            <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">📊 Assessment Breakdown</h4>
+                
+                {!allComplete && (
+                    <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+                        ⚠️ <span className="font-medium">Incomplete Grade</span> — Missing: {pendingAssessments.join(', ')}
+                        <span className="block text-xs text-yellow-600 mt-1">This grade will be calculated once all assessments are entered.</span>
+                    </div>
+                )}
+                
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {keys.map((key) => {
+                        const data = assessments[key as keyof typeof assessments];
+                        if (!data) return null;
+                        const percentage = data.maxScore > 0 ? Math.round((data.score / data.maxScore) * 100) : 0;
+                        const isPending = data.score === 0;
+                        return (
+                            <div key={key} className={`bg-white p-2 rounded border border-gray-100 text-center ${isPending ? 'opacity-50' : ''}`}>
+                                <div className="text-xs text-gray-500">{getAssessmentIcon(key)} {getAssessmentLabel(key)}</div>
+                                <div className="font-bold text-sm">
+                                    {isPending ? '—' : `${data.score}/${data.maxScore}`}
+                                </div>
+                                <div className="text-xs text-gray-400">{data.weight}% weight</div>
+                                <div className={`text-xs font-medium ${isPending ? 'text-gray-400' : 'text-blue-600'}`}>
+                                    {isPending ? '⏳ Pending' : `${percentage}%`}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
-            )}
-            
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                {keys.map((key) => {
-                    const data = assessments[key as keyof typeof assessments];
-                    if (!data) return null;
-                    const percentage = data.maxScore > 0 ? Math.round((data.score / data.maxScore) * 100) : 0;
-                    const isPending = data.score === 0;
-                    return (
-                        <div key={key} className={`bg-white p-2 rounded border border-gray-100 text-center ${isPending ? 'opacity-50' : ''}`}>
-                            <div className="text-xs text-gray-500">{getAssessmentIcon(key)} {getAssessmentLabel(key)}</div>
-                            <div className="font-bold text-sm">
-                                {isPending ? '—' : `${data.score}/${data.maxScore}`}
-                            </div>
-                            <div className="text-xs text-gray-400">{data.weight}% weight</div>
-                            <div className={`text-xs font-medium ${isPending ? 'text-gray-400' : 'text-blue-600'}`}>
-                                {isPending ? '⏳ Pending' : `${percentage}%`}
-                            </div>
-                        </div>
-                    );
-                })}
+                
+                {allComplete ? (
+                    <div className="mt-2 flex justify-between text-sm">
+                        <span className="text-gray-600">Total Score: <strong className="text-gray-800">{grade.totalScore || grade.score}%</strong></span>
+                        <span className="text-gray-600">Grade: <strong className={`${getGradeColor(grade.letterGrade || grade.grade || '')}`}>{grade.letterGrade || grade.grade}</strong></span>
+                        <span className="text-gray-600">GPA: <strong className="text-gray-800">{grade.gradePoints?.toFixed(1) || 'N/A'}</strong></span>
+                    </div>
+                ) : (
+                    <div className="mt-2 text-sm text-gray-500 italic">
+                        ⏳ Waiting for {pendingAssessments.join(', ')} to calculate final grade.
+                    </div>
+                )}
+                
+                {grade.feedback && (
+                    <div className="mt-2 text-sm text-gray-600 border-t pt-2">
+                        💬 <span className="italic">{grade.feedback}</span>
+                    </div>
+                )}
             </div>
-            
-            {/* ✅ Show total only if complete */}
-            {allComplete ? (
-                <div className="mt-2 flex justify-between text-sm">
-                    <span className="text-gray-600">Total Score: <strong className="text-gray-800">{grade.totalScore || grade.score}%</strong></span>
-                    <span className="text-gray-600">Grade: <strong className={`${getGradeColor(grade.letterGrade || grade.grade || '')}`}>{grade.letterGrade || grade.grade}</strong></span>
-                    <span className="text-gray-600">GPA: <strong className="text-gray-800">{grade.gradePoints?.toFixed(1) || 'N/A'}</strong></span>
-                </div>
-            ) : (
-                <div className="mt-2 text-sm text-gray-500 italic">
-                    ⏳ Waiting for {pendingAssessments.join(', ')} to calculate final grade.
-                </div>
-            )}
-            
-            {grade.feedback && (
-                <div className="mt-2 text-sm text-gray-600 border-t pt-2">
-                    💬 <span className="italic">{grade.feedback}</span>
-                </div>
-            )}
-        </div>
-    );
-};
+        );
+    };
 
     if (loading) {
         return (
@@ -243,7 +235,6 @@ const renderAssessmentBreakdown = (grade: GradeRecord) => {
                     <p className="text-gray-500">View your academic performance with detailed assessment breakdowns</p>
                 </div>
 
-                {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
                         <div className="bg-blue-100 p-3 rounded-lg text-blue-600"><GraduationCap size={25} /></div>
@@ -270,7 +261,6 @@ const renderAssessmentBreakdown = (grade: GradeRecord) => {
                     </div>
                 </div>
 
-                {/* Filters */}
                 {(subjects.length > 0 || gradeRecords.length > 0) && (
                     <div className="bg-white rounded-xl shadow-sm p-4">
                         <div className="flex flex-wrap items-end gap-4">
@@ -314,7 +304,6 @@ const renderAssessmentBreakdown = (grade: GradeRecord) => {
                     </div>
                 )}
 
-                {/* Grade Table with Expandable Rows */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
@@ -375,7 +364,6 @@ const renderAssessmentBreakdown = (grade: GradeRecord) => {
                     </div>
                 </div>
 
-                {/* GPA Summary */}
                 {totalSubjects > 0 && (
                     <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
                         <p className="text-sm text-gray-600">

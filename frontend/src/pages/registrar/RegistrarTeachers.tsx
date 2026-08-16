@@ -1,9 +1,7 @@
-// src/pages/registrar/RegistrarTeachers.tsx - COMPLETE WITH CLASS DROPDOWN
-
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Search, UserPlus, X, Check, BookOpen } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Teacher {
     _id: string;
@@ -49,10 +47,7 @@ const RegistrarTeachers = () => {
 
     const fetchTeachers = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/registrar/teachers', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/registrar/teachers');
             setTeachers(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -64,10 +59,7 @@ const RegistrarTeachers = () => {
 
     const fetchClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/registrar/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/registrar/classes');
             setClasses(response.data.data || []);
         } catch (error) {
             console.error("Error fetching classes:", error);
@@ -77,14 +69,11 @@ const RegistrarTeachers = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post('http://localhost:7000/api/registrar/teachers', formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.post('/api/registrar/teachers', formData);
 
             setShowModal(false);
             setSuccess(true);
-            setSuccessMessage(response.data.message || '✅ Teacher added successfully!');
+            setSuccessMessage(response.data.message || 'Teacher added successfully!');
             fetchTeachers();
 
             setFormData({
@@ -109,12 +98,9 @@ const RegistrarTeachers = () => {
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this teacher?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:7000/api/registrar/teachers/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.delete(`/api/registrar/teachers/${id}`);
             fetchTeachers();
-            alert('✅ Teacher deleted successfully!');
+            alert('Teacher deleted successfully!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to delete teacher");
         }
@@ -150,7 +136,6 @@ const RegistrarTeachers = () => {
     return (
         <DashboardLayout role="registrar">
             <div className="space-y-6">
-                {/* ✅ Success Message */}
                 {success && (
                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-green-700 dark:text-green-400 flex items-center gap-3">
                         <Check size={24} />
@@ -241,7 +226,6 @@ const RegistrarTeachers = () => {
                     </div>
                 </div>
 
-                {/* ✅ Enhanced Modal with Class Assignment */}
                 {showModal && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -256,7 +240,6 @@ const RegistrarTeachers = () => {
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                {/* Personal Information */}
                                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                                     <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Personal Information</h3>
                                     <div className="grid grid-cols-2 gap-4">
@@ -317,7 +300,6 @@ const RegistrarTeachers = () => {
                                     </div>
                                 </div>
 
-                                {/* Class Assignment */}
                                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                                     <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-3 flex items-center gap-2">
                                         <BookOpen size={16} />

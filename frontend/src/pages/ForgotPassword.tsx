@@ -1,9 +1,7 @@
-// src/pages/ForgotPassword.tsx - WITH LOGO
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, ArrowLeft, AlertCircle, CheckCircle, GraduationCap, Sparkles } from "lucide-react";
-import axios from "axios";
+import { apiClient } from "../config/api";
 
 const SCHOOL_LOGO = 'src/assets/logo.png';
 const SCHOOL_NAME = 'Elevate Skills Academy';
@@ -24,7 +22,7 @@ const ForgotPassword = () => {
         setSuccess(false);
 
         try {
-            const response = await axios.post('http://localhost:7000/api/password-reset/request', { email });
+            const response = await apiClient.post('/api/password-reset/request', { email });
 
             if (response.data.success) {
                 setSuccess(true);
@@ -41,7 +39,6 @@ const ForgotPassword = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 p-4">
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl max-w-md w-full p-8 border border-white/20 dark:border-gray-700">
-                {/* ✅ School Logo & Branding */}
                 <div className="text-center mb-6">
                     <div className="flex items-center justify-center gap-3 mb-3">
                         {SCHOOL_LOGO ? (
@@ -137,7 +134,6 @@ const ForgotPassword = () => {
                     </form>
                 )}
 
-                {/* ✅ Footer Branding */}
                 <div className="mt-6 text-center">
                     <p className="text-xs text-gray-400 dark:text-gray-500">
                         © {new Date().getFullYear()} {SCHOOL_NAME}. All rights reserved.

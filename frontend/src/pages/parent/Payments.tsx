@@ -1,9 +1,9 @@
-// src/pages/parent/ParentPayments.tsx - COMPLETE WITH SAFE RENDERING
+// src/pages/parent/ParentPayments.tsx - Converted to apiClient
 
 import { useState, useEffect } from "react";
 import { X, Check, Upload, Download, Eye, AlertCircle, Banknote, Users, Plus, FileText } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Child {
     _id: string;
@@ -101,7 +101,6 @@ const ParentPayments = () => {
 
     useEffect(() => {
         if (selectedChild) {
-            console.log('🔄 Selected child changed:', selectedChild);
             fetchChildFees(selectedChild);
             fetchChildPayments(selectedChild);
         }
@@ -109,7 +108,6 @@ const ParentPayments = () => {
 
     const fetchParentData = async () => {
         try {
-            const token = localStorage.getItem('token');
             const userStr = localStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : null;
             const userId = user?._id;
@@ -120,11 +118,7 @@ const ParentPayments = () => {
                 return;
             }
 
-            const childrenRes = await axios.get(
-                `http://localhost:7000/api/parents/${userId}/children`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
+            const childrenRes = await apiClient.get(`/api/parents/${userId}/children`);
             const childrenData = childrenRes.data.data || [];
             setChildren(childrenData);
 
@@ -134,7 +128,7 @@ const ParentPayments = () => {
 
             setLoading(false);
         } catch (error: any) {
-            console.error("❌ Error fetching parent data:", error);
+            console.error("Error fetching parent data:", error);
             setError(error.response?.data?.error || "Failed to load data");
             setLoading(false);
         }
@@ -142,11 +136,7 @@ const ParentPayments = () => {
 
     const fetchChildFees = async (childId: string) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(
-                `http://localhost:7000/api/finance/parent/student-fees?studentId=${childId}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get(`/api/finance/parent/student-fees?studentId=${childId}`);
             
             const fees = response.data.data || [];
             setStudentFees(fees);
@@ -160,21 +150,17 @@ const ParentPayments = () => {
                 }));
             }
         } catch (error: any) {
-            console.error("❌ Error fetching child fees:", error);
+            console.error("Error fetching child fees:", error);
             setError(error.response?.data?.error || "Failed to load fees");
         }
     };
 
     const fetchChildPayments = async (childId: string) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(
-                `http://localhost:7000/api/finance/parent/payments?studentId=${childId}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get(`/api/finance/parent/payments?studentId=${childId}`);
             setPayments(response.data.data || []);
         } catch (error: any) {
-            console.error("❌ Error fetching child payments:", error);
+            console.error("Error fetching child payments:", error);
         }
     };
 
@@ -220,7 +206,6 @@ const ParentPayments = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
             const formDataToSend = new FormData();
             formDataToSend.append('studentFeeId', formData.studentFeeId);
             formDataToSend.append('bankName', formData.bankName);
@@ -229,16 +214,11 @@ const ParentPayments = () => {
             formDataToSend.append('paymentDate', formData.paymentDate);
             formDataToSend.append('screenshot', screenshot);
 
-            await axios.post(
-                'http://localhost:7000/api/payments/submit',
-                formDataToSend,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data',
-                    },
-                }
-            );
+            await apiClient.post('/api/payments/submit', formDataToSend, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
 
             setSuccess(true);
             setSuccessMessage("Payment submitted successfully!");
@@ -276,17 +256,11 @@ const ParentPayments = () => {
         setModalError("");
     };
 
-    // ✅ RECEIPT DOWNLOAD
     const downloadReceipt = async (paymentId: string) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(
-                `http://localhost:7000/api/finance/payments/${paymentId}/receipt`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                    responseType: 'blob',
-                }
-            );
+            const response = await apiClient.get(`/api/finance/payments/${paymentId}/receipt`, {
+                responseType: 'blob',
+            });
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
@@ -349,7 +323,6 @@ const ParentPayments = () => {
         );
     }
 
-    // ✅ Safe calculation with fallbacks
     const totalOutstanding = Array.isArray(studentFees)
         ? studentFees
             .filter(fee => fee?.status !== 'paid')
@@ -410,7 +383,7 @@ const ParentPayments = () => {
                         ) : studentFees.filter(f => f?.status !== 'paid').length === 0 ? (
                             <div className="text-center py-8 text-green-600">
                                 <Check size={48} className="mx-auto text-green-300 mb-2" />
-                                <p>🎉 All fees are paid for this child!</p>
+                                <p>All fees are paid for this child!</p>
                             </div>
                         ) : (
                             studentFees
@@ -424,7 +397,7 @@ const ParentPayments = () => {
                                             </span>
                                             {fee.isOverdue && (
                                                 <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                                                    ⚠️ Late Fee: {fee.lateFeeAmount || 0} ETB
+                                                    Late Fee: {fee.lateFeeAmount || 0} ETB
                                                 </span>
                                             )}
                                         </div>
@@ -488,7 +461,6 @@ const ParentPayments = () => {
                 </div>
             </div>
 
-            {/* Modal - Keep as is */}
             {showModal && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"

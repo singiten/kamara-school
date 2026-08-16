@@ -1,8 +1,10 @@
+// src/pages/parent/ParentChildAttendance.tsx - Converted to apiClient
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ClipboardCheck, CheckCircle, XCircle, Clock } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface AttendanceRecord {
     _id: string;
@@ -26,19 +28,11 @@ const ParentChildAttendance = () => {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            // Fetch child info
-            const userRes = await axios.get(`http://localhost:7000/api/users/${childId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // Use apiClient
+            const userRes = await apiClient.get(`/api/users/${childId}`);
             setStudent(userRes.data.data);
 
-            // Fetch child's attendance
-            const attendanceRes = await axios.get(
-                `http://localhost:7000/api/attendance/child/${childId}/attendance`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const attendanceRes = await apiClient.get(`/api/attendance/child/${childId}/attendance`);
             setAttendance(attendanceRes.data.data?.records || []);
             setLoading(false);
         } catch (error: any) {
@@ -111,7 +105,6 @@ const ParentChildAttendance = () => {
                     <p className="text-gray-500">{student?.class} • {student?.email}</p>
                 </div>
 
-                {/* Summary Cards */}
                 {attendance.length > 0 && (
                     <div className="grid grid-cols-4 gap-4">
                         <div className="bg-white rounded-xl shadow-sm p-4 text-center border-l-4 border-green-500">

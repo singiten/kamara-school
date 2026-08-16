@@ -1,13 +1,13 @@
-// src/pages/admin/AdminAnnouncements.tsx - ENHANCED UI
+// src/pages/admin/AdminAnnouncements.tsx - ENHANCED UI WITH apiClient
 
-import React, { useState, useEffect, JSX } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Plus, Megaphone, CheckCircle, Clock, X, Calendar, Users,
     Edit2, Trash2, Eye, EyeOff, Send, Bell, Sparkles,
     Filter, Search, ChevronDown, ChevronUp, Award
 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Announcement {
     _id: string;
@@ -51,7 +51,7 @@ const PRIORITY_STYLES: Record<string, { bg: string; text: string; border: string
     Urgent: { bg: "bg-red-100", text: "text-red-600", border: "border-red-300", icon: "🚨" },
 };
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; icon: JSX.Element }> = {
+const STATUS_STYLES: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
     Published: { bg: "bg-green-100", text: "text-green-700", icon: <CheckCircle size={14} /> },
     Draft: { bg: "bg-gray-100", text: "text-gray-600", icon: <Clock size={14} /> },
     Archived: { bg: "bg-gray-100", text: "text-gray-400", icon: <EyeOff size={14} /> },
@@ -84,57 +84,13 @@ const AdminAnnouncements = () => {
         fetchAnnouncements();
     }, []);
 
+    // ✅ UPDATED: Using apiClient
     const fetchAnnouncements = async () => {
         try {
-            const token = localStorage.getItem('token');
-            // API call - replace with actual endpoint
-            // const response = await axios.get('http://localhost:7000/api/announcements', {
-            //     headers: { Authorization: `Bearer ${token}` }
-            // });
-            // setAnnouncements(response.data.data || []);
-
-            // Mock data
-            setAnnouncements([
-                {
-                    _id: "1",
-                    title: "📢 School Reopening Announcement",
-                    content: "School will reopen on September 15, 2026. All students must report to their classes by 8:00 AM sharp. Please come with your school materials and uniforms ready.",
-                    audience: "All",
-                    priority: "High",
-                    date: "2026-09-01",
-                    status: "Published",
-                    createdBy: { _id: "admin1", name: "Admin User" },
-                    createdAt: "2026-09-01T10:00:00Z",
-                    expiresAt: "2026-09-15T23:59:59Z",
-                    views: 245,
-                },
-                {
-                    _id: "2",
-                    title: "👨‍👩‍👧‍👦 Parent-Teacher Meeting",
-                    content: "Parent-teacher meeting is scheduled for October 10, 2026 at 2:00 PM in the school auditorium. All parents are encouraged to attend.",
-                    audience: "Parents",
-                    priority: "Medium",
-                    date: "2026-09-15",
-                    status: "Published",
-                    createdBy: { _id: "admin1", name: "Admin User" },
-                    createdAt: "2026-09-15T14:30:00Z",
-                    expiresAt: "2026-10-10T23:59:59Z",
-                    views: 89,
-                },
-                {
-                    _id: "3",
-                    title: "🚨 Urgent: Exam Schedule Change",
-                    content: "Due to unforeseen circumstances, the final exams have been rescheduled to November 15-20, 2026. New timetables will be distributed soon.",
-                    audience: "Students",
-                    priority: "Urgent",
-                    date: "2026-09-20",
-                    status: "Published",
-                    createdBy: { _id: "admin1", name: "Admin User" },
-                    createdAt: "2026-09-20T08:15:00Z",
-                    expiresAt: "2026-11-20T23:59:59Z",
-                    views: 512,
-                },
-            ]);
+            setLoading(true);
+            // ✅ Use apiClient - no need for manual Authorization header
+            const response = await apiClient.get('/api/announcements');
+            setAnnouncements(response.data.data || []);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching announcements:", error);
@@ -142,35 +98,37 @@ const AdminAnnouncements = () => {
         }
     };
 
+    // ✅ UPDATED: Using apiClient
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            // API call - replace with actual endpoint
-            // await axios.post('http://localhost:7000/api/announcements', formData, {
-            //     headers: { Authorization: `Bearer ${token}` }
-            // });
+            const url = editingId ? `/api/announcements/${editingId}` : '/api/announcements';
+            const method = editingId ? 'put' : 'post';
 
-            const newAnnouncement: Announcement = {
-                _id: Date.now().toString(),
-                ...formData,
-                createdBy: { _id: user?._id || 'current', name: user?.name || 'You' },
-                createdAt: new Date().toISOString(),
-                views: 0,
-            };
+            // ✅ Use apiClient
+            const response = await apiClient[method](url, formData);
 
-            if (editingId) {
-                setAnnouncements(announcements.map(a =>
-                    a._id === editingId ? { ...a, ...formData } : a
-                ));
-            } else {
-                setAnnouncements([newAnnouncement, ...announcements]);
+            if (response.data.success) {
+                await fetchAnnouncements();
+                setShowModal(false);
+                resetForm();
             }
-
-            setShowModal(false);
-            resetForm();
         } catch (error: any) {
+            console.error("Error saving announcement:", error);
             alert(error.response?.data?.error || "Failed to save announcement");
+        }
+    };
+
+    // ✅ UPDATED: Using apiClient
+    const handleDelete = async (id: string) => {
+        if (!window.confirm("Delete this announcement?")) return;
+        try {
+            // ✅ Use apiClient
+            await apiClient.delete(`/api/announcements/${id}`);
+            await fetchAnnouncements();
+        } catch (error: any) {
+            console.error("Error deleting announcement:", error);
+            alert(error.response?.data?.error || "Failed to delete announcement");
         }
     };
 
@@ -185,11 +143,6 @@ const AdminAnnouncements = () => {
             expiresAt: "",
         });
         setEditingId(null);
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!window.confirm("Delete this announcement?")) return;
-        setAnnouncements(announcements.filter(a => a._id !== id));
     };
 
     const toggleExpand = (id: string) => {
@@ -374,91 +327,91 @@ const AdminAnnouncements = () => {
                                     key={announcement._id}
                                     className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 ${priorityStyle.border} border-gray-200 dark:border-gray-700 hover:shadow-md transition-all overflow-hidden`}
                                 >
-                                    <div className="p-5">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                {/* Title Row */}
-                                                <div className="flex items-center flex-wrap gap-2">
-                                                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                                                        {announcement.title}
-                                                    </h3>
-                                                    <span className={`px-3 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${priorityStyle.bg} ${priorityStyle.text}`}>
-                                                        {priorityStyle.icon} {announcement.priority}
-                                                    </span>
-                                                    <span className={`px-3 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${statusStyle.bg} ${statusStyle.text}`}>
-                                                        {statusStyle.icon} {announcement.status}
-                                                    </span>
-                                                </div>
-
-                                                {/* Content */}
-                                                <p className={`text-gray-600 dark:text-gray-300 mt-2 ${isExpanded ? '' : 'line-clamp-2'}`}>
-                                                    {announcement.content}
-                                                </p>
-
-                                                {/* Meta Info */}
-                                                <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
-                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${audienceBadge.bg} ${audienceBadge.text}`}>
-                                                        {audienceBadge.icon} {announcement.audience}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Calendar size={14} />
-                                                        {new Date(announcement.date).toLocaleDateString()}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Users size={14} />
-                                                        {announcement.views || 0} views
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        👤 {announcement.createdBy?.name || 'Unknown'}
-                                                    </span>
-                                                    {announcement.expiresAt && (
-                                                        <span className="flex items-center gap-1 text-orange-500">
-                                                            <Clock size={14} />
-                                                            Expires: {new Date(announcement.expiresAt).toLocaleDateString()}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Actions */}
-                                            <div className="flex items-center gap-1 ml-4 flex-shrink-0">
-                                                <button
-                                                    onClick={() => toggleExpand(announcement._id)}
-                                                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                                                    title={isExpanded ? "Show less" : "Show more"}
-                                                >
-                                                    {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingId(announcement._id);
-                                                        setFormData({
-                                                            title: announcement.title,
-                                                            content: announcement.content,
-                                                            audience: announcement.audience,
-                                                            priority: announcement.priority,
-                                                            date: announcement.date,
-                                                            status: announcement.status,
-                                                            expiresAt: announcement.expiresAt || "",
-                                                        });
-                                                        setShowModal(true);
-                                                    }}
-                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                                    title="Edit"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(announcement._id)}
-                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                    <div className="p-5">
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                {/* Title Row */}
+                                <div className="flex items-center flex-wrap gap-2">
+                                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                                        {announcement.title}
+                                    </h3>
+                                    <span className={`px-3 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${priorityStyle.bg} ${priorityStyle.text}`}>
+                                        {priorityStyle.icon} {announcement.priority}
+                                    </span>
+                                    <span className={`px-3 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${statusStyle.bg} ${statusStyle.text}`}>
+                                        {statusStyle.icon} {announcement.status}
+                                    </span>
                                 </div>
+
+                                {/* Content */}
+                                <p className={`text-gray-600 dark:text-gray-300 mt-2 ${isExpanded ? '' : 'line-clamp-2'}`}>
+                                    {announcement.content}
+                                </p>
+
+                                {/* Meta Info */}
+                                <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${audienceBadge.bg} ${audienceBadge.text}`}>
+                                        {audienceBadge.icon} {announcement.audience}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <Calendar size={14} />
+                                        {new Date(announcement.date).toLocaleDateString()}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <Users size={14} />
+                                        {announcement.views || 0} views
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        👤 {announcement.createdBy?.name || 'Unknown'}
+                                    </span>
+                                    {announcement.expiresAt && (
+                                        <span className="flex items-center gap-1 text-orange-500">
+                                            <Clock size={14} />
+                                            Expires: {new Date(announcement.expiresAt).toLocaleDateString()}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-1 ml-4 flex-shrink-0">
+                                <button
+                                    onClick={() => toggleExpand(announcement._id)}
+                                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                                    title={isExpanded ? "Show less" : "Show more"}
+                                >
+                                    {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setEditingId(announcement._id);
+                                        setFormData({
+                                            title: announcement.title,
+                                            content: announcement.content,
+                                            audience: announcement.audience,
+                                            priority: announcement.priority,
+                                            date: announcement.date,
+                                            status: announcement.status,
+                                            expiresAt: announcement.expiresAt || "",
+                                        });
+                                        setShowModal(true);
+                                    }}
+                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                    title="Edit"
+                                >
+                                    <Edit2 size={16} />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(announcement._id)}
+                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                    title="Delete"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                             );
                         })
                     )}

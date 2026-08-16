@@ -1,6 +1,8 @@
+// src/pages/admin/AdminGrades.tsx - WITH apiClient
+
 import { useState, useEffect } from "react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface GradeStats {
     totalGrades: number;
@@ -56,32 +58,19 @@ const AdminGrades = () => {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('token');
-
-            // 1️⃣ Get all grades
-            const gradesRes = await axios.get('http://localhost:7000/api/grades/all', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
+            // ✅ Use apiClient
+            const gradesRes = await apiClient.get('/api/grades/all');
             const allGrades: GradeRecord[] = gradesRes.data.data || [];
             setGrades(allGrades);
             setFilteredGrades(allGrades);
 
-            // 2️⃣ Get grade statistics
-            const statsRes = await axios.get('http://localhost:7000/api/grades/stats', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
+            const statsRes = await apiClient.get('/api/grades/stats');
             setStats(statsRes.data.data);
 
-            // 3️⃣ Extract unique subjects
             const uniqueSubjects = [...new Set(allGrades.map((g: GradeRecord) => g.subject).filter(Boolean))];
             setSubjects(uniqueSubjects);
 
-            // 4️⃣ Get classes for filter
-            const classesRes = await axios.get('http://localhost:7000/api/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const classesRes = await apiClient.get('/api/classes');
             setClasses(classesRes.data.data || []);
 
             setLoading(false);

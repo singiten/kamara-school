@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { UserPlus, Search, Link2, X } from "lucide-react"; import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { UserPlus, Search, Link2, X } from "lucide-react";
+import DashboardLayout from "../../layout/DashboardLayout";
+import { apiClient } from "../../config/api";
 
 interface Parent {
     _id: string;
@@ -46,10 +47,7 @@ const RegistrarParents = () => {
 
     const fetchParents = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/registrar/parents', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/registrar/parents');
             setParents(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -61,10 +59,7 @@ const RegistrarParents = () => {
 
     const fetchStudents = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/registrar/students', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/registrar/students');
             setStudents(response.data.data || []);
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -74,13 +69,10 @@ const RegistrarParents = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            await axios.post('http://localhost:7000/api/registrar/parents', formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.post('/api/registrar/parents', formData);
             setShowModal(false);
             fetchParents();
-            alert('✅ Parent created successfully!');
+            alert('Parent created successfully!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to create parent");
         }
@@ -92,16 +84,11 @@ const RegistrarParents = () => {
             return;
         }
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(
-                `http://localhost:7000/api/registrar/parents/${selectedParent._id}/link/${selectedStudentId}`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await apiClient.put(`/api/registrar/parents/${selectedParent._id}/link/${selectedStudentId}`, {});
             setShowLinkModal(false);
             setSelectedStudentId("");
             fetchParents();
-            alert('✅ Student linked to parent successfully!');
+            alert('Student linked to parent successfully!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to link student");
         }
@@ -144,7 +131,6 @@ const RegistrarParents = () => {
                     </button>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-3 gap-4">
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
                         <p className="text-gray-500 dark:text-gray-400 text-sm">Total Parents</p>
@@ -164,7 +150,6 @@ const RegistrarParents = () => {
                     </div>
                 </div>
 
-                {/* Search */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
                     <div className="relative">
                         <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -178,7 +163,6 @@ const RegistrarParents = () => {
                     </div>
                 </div>
 
-                {/* Parents Table */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
@@ -233,7 +217,6 @@ const RegistrarParents = () => {
                     </div>
                 </div>
 
-                {/* Add Parent Modal */}
                 {showModal && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg">
@@ -255,7 +238,6 @@ const RegistrarParents = () => {
                                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 dark:text-gray-100"
                                     required
                                 />
-                                {/* Add this after the email field */}
                                 <input
                                     type="password"
                                     placeholder="Password (default: parent123)"
@@ -287,7 +269,6 @@ const RegistrarParents = () => {
                     </div>
                 )}
 
-                {/* Link Student Modal */}
                 {showLinkModal && selectedParent && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg">

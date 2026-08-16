@@ -1,9 +1,11 @@
+// src/pages/parent/ParentChildren.tsx - Converted to apiClient
+
 import { useState, useEffect } from "react";
 import type { Users, User, BookOpen, Eye, GraduationCap, ClipboardCheck } from "lucide-react";
 import { Users as UsersIcon, User as UserIcon, BookOpen as BookOpenIcon, Eye as EyeIcon, GraduationCap as GraduationCapIcon, ClipboardCheck as ClipboardCheckIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Child {
     _id: string;
@@ -27,7 +29,6 @@ const ParentChildren = () => {
 
     const fetchChildren = async () => {
         try {
-            const token = localStorage.getItem('token');
             const userStr = localStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : null;
             const userId = user?._id;
@@ -38,10 +39,8 @@ const ParentChildren = () => {
                 return;
             }
 
-            const response = await axios.get(
-                `http://localhost:7000/api/parents/${userId}/children`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            // Use apiClient
+            const response = await apiClient.get(`/api/parents/${userId}/children`);
             setChildren(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -51,12 +50,10 @@ const ParentChildren = () => {
         }
     };
 
-    // ✅ Navigate to child's grades
     const viewGrades = (childId: string) => {
         navigate(`/parent/child/${childId}/grades`);
     };
 
-    // ✅ Navigate to child's attendance
     const viewAttendance = (childId: string) => {
         navigate(`/parent/child/${childId}/attendance`);
     };
@@ -114,7 +111,6 @@ const ParentChildren = () => {
                                     </div>
                                 </div>
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                    {/* ✅ View Grades Button - Navigates to grades page */}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -124,8 +120,6 @@ const ParentChildren = () => {
                                     >
                                         <GraduationCapIcon size={14} /> View Grades
                                     </button>
-                                    
-                                    {/* ✅ View Attendance Button - Navigates to attendance page */}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -141,7 +135,6 @@ const ParentChildren = () => {
                     </div>
                 )}
 
-                {/* Child Details Modal */}
                 {selectedChild && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-xl p-6 w-full max-w-md">

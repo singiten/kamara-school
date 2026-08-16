@@ -1,7 +1,9 @@
+// src/pages/parent/ParentGrades.tsx - Converted to apiClient
+
 import { useState, useEffect } from "react";
 import { GraduationCap, BookOpen, Users, Filter, BarChart3 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Assessment {
     score: number;
@@ -63,7 +65,6 @@ const ParentGrades = () => {
 
     const fetchParentData = async () => {
         try {
-            const token = localStorage.getItem('token');
             const userStr = localStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : null;
             const userId = user?._id;
@@ -74,10 +75,7 @@ const ParentGrades = () => {
                 return;
             }
 
-            const childrenRes = await axios.get(
-                `http://localhost:7000/api/parents/${userId}/children`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const childrenRes = await apiClient.get(`/api/parents/${userId}/children`);
 
             const childrenData: Child[] = (childrenRes.data?.data || []) as Child[];
             setChildren(childrenData);
@@ -85,7 +83,7 @@ const ParentGrades = () => {
             if (childrenData.length > 0) {
                 const firstChildId = childrenData[0]._id;
                 setSelectedChild(firstChildId);
-                await fetchChildGrades(firstChildId, token ?? undefined);
+                await fetchChildGrades(firstChildId);
             } else {
                 setLoading(false);
             }
@@ -96,14 +94,9 @@ const ParentGrades = () => {
         }
     };
 
-    const fetchChildGrades = async (childId: string, token?: string) => {
+    const fetchChildGrades = async (childId: string) => {
         try {
-            const authToken = token || localStorage.getItem('token');
-
-            const gradesRes = await axios.get(
-                `http://localhost:7000/api/grades/child/${childId}/grades`,
-                { headers: { Authorization: `Bearer ${authToken}` } }
-            );
+            const gradesRes = await apiClient.get(`/api/grades/child/${childId}/grades`);
 
             const grades: GradeRecord[] = (gradesRes.data?.data || []) as GradeRecord[];
             setGradeRecords(grades);
@@ -276,7 +269,6 @@ const ParentGrades = () => {
                     <p className="text-gray-500">View your children's academic performance with detailed assessment breakdowns</p>
                 </div>
 
-                {/* Child Selector */}
                 <div className="bg-white rounded-xl shadow-sm p-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Select Child</label>
                     <div className="flex flex-wrap gap-3">
@@ -295,7 +287,6 @@ const ParentGrades = () => {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
                         <div className="bg-blue-100 p-3 rounded-lg text-blue-600"><GraduationCap size={25} /></div>
@@ -320,7 +311,6 @@ const ParentGrades = () => {
                     </div>
                 </div>
 
-                {/* Filters */}
                 {(subjects.length > 0 || gradeRecords.length > 0) && (
                     <div className="bg-white rounded-xl shadow-sm p-4">
                         <div className="flex flex-wrap items-end gap-4">
@@ -364,7 +354,6 @@ const ParentGrades = () => {
                     </div>
                 )}
 
-                {/* Grade Table with Expandable Rows */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">

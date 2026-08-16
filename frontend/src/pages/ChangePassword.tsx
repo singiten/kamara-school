@@ -1,11 +1,8 @@
-// src/pages/ChangePassword.tsx - Force password change page (No current password required)
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, AlertCircle, CheckCircle, Eye, EyeOff, Sparkles } from "lucide-react";
-import axios from "axios";
+import { apiClient } from "../config/api";
 
-// ✅ School Logo
 import schoolLogo from '../assets/logo.png';
 const SCHOOL_NAME = 'Kamara School';
 const SCHOOL_TAGLINE = 'Empowering Ethiopian Futures';
@@ -24,7 +21,6 @@ const ChangePassword = () => {
         setLoading(true);
         setError("");
 
-        // ✅ Validate passwords match
         if (newPassword !== confirmPassword) {
             setError("Passwords do not match");
             setLoading(false);
@@ -38,32 +34,20 @@ const ChangePassword = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            
-            // ✅ Get current user info
             const userStr = localStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : null;
 
-            // ✅ Call change password WITHOUT current password
-            const response = await axios.post(
-                'http://localhost:7000/api/auth/change-password',
-                {
-                    newPassword: newPassword,
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            const response = await apiClient.post('/api/auth/change-password', {
+                newPassword: newPassword,
+            });
 
             if (response.data.success) {
                 setSuccess(true);
-                // ✅ Clear the mustChangePassword flag from local storage
                 if (user) {
                     user.mustChangePassword = false;
                     localStorage.setItem('user', JSON.stringify(user));
                 }
 
-                // ✅ After 2 seconds, redirect to dashboard
                 setTimeout(() => {
                     const role = user?.role || 'student';
                     if (role === 'admin') navigate('/admin');
@@ -76,7 +60,7 @@ const ChangePassword = () => {
                 }, 2000);
             }
         } catch (err: any) {
-            console.error('❌ Change password error:', err);
+            console.error('Change password error:', err);
             setError(err.response?.data?.error || "Failed to change password");
         } finally {
             setLoading(false);
@@ -86,7 +70,6 @@ const ChangePassword = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 p-4">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 border border-gray-100 dark:border-gray-700">
-                {/* School Logo & Branding */}
                 <div className="text-center mb-6">
                     <div className="flex flex-col items-center justify-center gap-3 mb-3">
                         <img 

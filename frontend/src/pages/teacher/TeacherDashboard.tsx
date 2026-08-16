@@ -1,5 +1,3 @@
-// src/pages/teacher/TeacherDashboard.tsx - COMPLETE FIXED
-
 import { useState, useEffect } from "react";
 import { 
     Users, 
@@ -28,11 +26,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
-
-// ============================================
-// 📌 INTERFACES
-// ============================================
+import { apiClient } from "../../config/api";
 
 interface Student {
     _id: string;
@@ -59,7 +53,7 @@ interface Announcement {
     priority: string;
     createdAt: string;
     createdBy?: { name: string };
-    status?: string; // ✅ ADDED - Fixes the error
+    status?: string;
 }
 
 interface Resource {
@@ -82,16 +76,11 @@ interface Worksheet {
     createdAt: string;
 }
 
-// ============================================
-// 📌 MAIN COMPONENT
-// ============================================
-
 const TeacherDashboard = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     
-    // ✅ State
     const [teacherInfo, setTeacherInfo] = useState<any>(null);
     const [assignedClasses, setAssignedClasses] = useState<Class[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
@@ -103,16 +92,11 @@ const TeacherDashboard = () => {
     const [totalWorksheets, setTotalWorksheets] = useState(0);
     const [pendingTasks, setPendingTasks] = useState(0);
 
-    // ✅ Get user info
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
     const userId = user?._id || '';
     const teacherName = user?.name || 'Teacher';
     const teacherSubject = user?.subject || '';
-
-    // ============================================
-    // 📡 FETCH DATA
-    // ============================================
 
     useEffect(() => {
         if (userId) {
@@ -125,29 +109,11 @@ const TeacherDashboard = () => {
 
     const fetchAllData = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            if (!token) {
-                setError("Authentication required");
-                setLoading(false);
-                return;
-            }
-            
-            // ✅ 1. Fetch teacher info
-            await fetchTeacherInfo(token);
-            
-            // ✅ 2. Fetch assigned classes
-            await fetchAssignedClasses(token);
-            
-            // ✅ 3. Fetch announcements
-            await fetchAnnouncements(token);
-            
-            // ✅ 4. Fetch resources
-            await fetchResources(token);
-            
-            // ✅ 5. Fetch worksheets
-            await fetchWorksheets(token);
-            
+            await fetchTeacherInfo();
+            await fetchAssignedClasses();
+            await fetchAnnouncements();
+            await fetchResources();
+            await fetchWorksheets();
             setLoading(false);
         } catch (error) {
             console.error("Error fetching teacher data:", error);
@@ -156,31 +122,21 @@ const TeacherDashboard = () => {
         }
     };
 
-    // ✅ Fetch Teacher Info
-    const fetchTeacherInfo = async (token: string) => {
+    const fetchTeacherInfo = async () => {
         try {
-            const response = await axios.get(
-                `http://localhost:7000/api/auth/me`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get('/api/auth/me');
             setTeacherInfo(response.data.data);
         } catch (error) {
             console.error("Error fetching teacher info:", error);
         }
     };
 
-    // ✅ Fetch Assigned Classes
-    const fetchAssignedClasses = async (token: string) => {
+    const fetchAssignedClasses = async () => {
         try {
-            // Try to get teacher's assigned classes
-            const response = await axios.get(
-                `http://localhost:7000/api/resources/teacher/classes`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get('/api/resources/teacher/classes');
             const classesData = response.data.data || [];
             setAssignedClasses(classesData);
             
-            // Count total students across all classes
             let studentCount = 0;
             classesData.forEach((cls: any) => {
                 studentCount += cls.students?.length || 0;
@@ -189,12 +145,8 @@ const TeacherDashboard = () => {
             
         } catch (error) {
             console.error("Error fetching assigned classes:", error);
-            // Fallback: try to get from /auth/me
             try {
-                const meRes = await axios.get(
-                    `http://localhost:7000/api/auth/me`,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+                const meRes = await apiClient.get('/api/auth/me');
                 const userData = meRes.data.data;
                 if (userData.assignedClasses) {
                     setAssignedClasses(userData.assignedClasses);
@@ -205,15 +157,10 @@ const TeacherDashboard = () => {
         }
     };
 
-    // ✅ Fetch Announcements
-    const fetchAnnouncements = async (token: string) => {
+    const fetchAnnouncements = async () => {
         try {
-            const response = await axios.get(
-                'http://localhost:7000/api/announcements',
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get('/api/announcements');
             const announcementsData = response.data.data || [];
-            // Filter for teacher-relevant announcements
             const teacherAnnouncements = announcementsData.filter(
                 (a: any) => a.audience === 'teachers' || a.audience === 'all' || a.audience === 'All'
             );
@@ -223,13 +170,9 @@ const TeacherDashboard = () => {
         }
     };
 
-    // ✅ Fetch Resources
-    const fetchResources = async (token: string) => {
+    const fetchResources = async () => {
         try {
-            const response = await axios.get(
-                'http://localhost:7000/api/resources',
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get('/api/resources');
             const resourcesData = response.data.data || [];
             setResources(resourcesData.slice(0, 5));
             setTotalResources(resourcesData.length);
@@ -238,28 +181,19 @@ const TeacherDashboard = () => {
         }
     };
 
-    // ✅ Fetch Worksheets
-    const fetchWorksheets = async (token: string) => {
+    const fetchWorksheets = async () => {
         try {
-            const response = await axios.get(
-                'http://localhost:7000/api/worksheets/my-worksheets',
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get('/api/worksheets/my-worksheets');
             const worksheetsData = response.data.data || [];
             setWorksheets(worksheetsData.slice(0, 5));
             setTotalWorksheets(worksheetsData.length);
             
-            // Count pending tasks (draft worksheets)
             const pending = worksheetsData.filter((w: any) => w.status === 'draft').length;
             setPendingTasks(pending);
         } catch (error) {
             console.error("Error fetching worksheets:", error);
         }
     };
-
-    // ============================================
-    // 📊 HELPERS
-    // ============================================
 
     const getPriorityColor = (priority: string) => {
         const colors: Record<string, string> = {
@@ -295,10 +229,6 @@ const TeacherDashboard = () => {
         return new Date(date).toLocaleDateString();
     };
 
-    // ============================================
-    // 🎨 RENDER
-    // ============================================
-
     if (loading) {
         return (
             <DashboardLayout role="teacher">
@@ -331,13 +261,11 @@ const TeacherDashboard = () => {
         );
     }
 
-    // ✅ Fixed: Use optional chaining to safely access status
     const publishedAnnouncements = announcements.filter(a => a.status === 'Published' || a.status === 'published');
 
     return (
         <DashboardLayout role="teacher">
             <div className="max-w-6xl mx-auto space-y-6">
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -365,7 +293,6 @@ const TeacherDashboard = () => {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
                         <div className="flex items-center justify-between">
@@ -413,7 +340,6 @@ const TeacherDashboard = () => {
                     </div>
                 </div>
 
-                {/* Classes Overview */}
                 {assignedClasses.length > 0 && (
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
@@ -457,9 +383,7 @@ const TeacherDashboard = () => {
                     </div>
                 )}
 
-                {/* Recent Resources & Worksheets */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Recent Resources */}
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -495,7 +419,6 @@ const TeacherDashboard = () => {
                         )}
                     </div>
 
-                    {/* Recent Worksheets */}
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -536,9 +459,7 @@ const TeacherDashboard = () => {
                     </div>
                 </div>
 
-                {/* Announcements & Quick Actions */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Announcements */}
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -575,7 +496,6 @@ const TeacherDashboard = () => {
                         )}
                     </div>
 
-                    {/* Quick Actions */}
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                             <Briefcase size={20} className="text-blue-600" />

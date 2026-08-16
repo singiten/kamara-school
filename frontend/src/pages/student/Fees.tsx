@@ -1,8 +1,6 @@
-// src/pages/student/MyFees.tsx - FIXED API ENDPOINT
-
 import { useState, useEffect } from "react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface FeeStatus {
     feeName: string;
@@ -31,7 +29,6 @@ const MyFees = () => {
 
     const fetchFeeStatus = async () => {
         try {
-            const token = localStorage.getItem('token');
             const userStr = localStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : null;
             const studentId = user?._id;
@@ -42,16 +39,11 @@ const MyFees = () => {
                 return;
             }
 
-            // ✅ Use the correct finance route for student fees
-            const response = await axios.get(
-                `http://localhost:7000/api/finance/parent/student-fees?studentId=${studentId}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get(`/api/finance/parent/student-fees?studentId=${studentId}`);
 
             if (response.data.success) {
                 const feesData = response.data.data || [];
                 
-                // ✅ Transform data to match the UI
                 const transformedFees = feesData.map((fee: any) => {
                     let statusText = 'Pending';
                     let statusColor = 'yellow';
@@ -73,7 +65,6 @@ const MyFees = () => {
                     };
                 });
 
-                // ✅ Calculate summary
                 const totalFees = transformedFees.length;
                 const paid = transformedFees.filter(f => f.status === 'paid').length;
                 const pending = transformedFees.filter(f => f.status === 'pending').length;
@@ -138,13 +129,11 @@ const MyFees = () => {
     return (
         <DashboardLayout role="student">
             <div className="space-y-6">
-                {/* Header */}
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800">My Fee Status</h1>
                     <p className="text-gray-500">Track your fee payment status</p>
                 </div>
 
-                {/* Summary Cards */}
                 {summary && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
@@ -166,7 +155,6 @@ const MyFees = () => {
                     </div>
                 )}
 
-                {/* Fee Status Table */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b">
                         <h2 className="font-semibold text-lg text-gray-800">Fee Status</h2>

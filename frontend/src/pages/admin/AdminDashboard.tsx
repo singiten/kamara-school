@@ -1,8 +1,10 @@
+// src/pages/admin/AdminDashboard.tsx - COMPLETE WITH apiClient
+
 import { useState, useEffect } from "react";
 import DashboardLayout from "../../layout/DashboardLayout";
 import UserRegistrationModal from "../../components/forms/UserRegistrationModal";
 import type { UserData } from "../../types/user";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 const AdminDashboard = () => {
     const [modalOpen, setModalOpen] = useState(false);
@@ -23,15 +25,9 @@ const AdminDashboard = () => {
 
     const fetchDashboardData = async () => {
         try {
-            const token = localStorage.getItem('token');
-
-            const statsRes = await axios.get('http://localhost:7000/api/users/stats/roles', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            const usersRes = await axios.get('http://localhost:7000/api/users?limit=5', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // ✅ Using apiClient - no need to add Authorization header manually
+            const statsRes = await apiClient.get('/api/users/stats/roles');
+            const usersRes = await apiClient.get('/api/users?limit=5');
 
             const data = statsRes.data.data;
             setStats([
@@ -49,8 +45,14 @@ const AdminDashboard = () => {
 
             setRecentActivities(activities);
             setLoading(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching dashboard data:", error);
+            if (error.response?.status === 401) {
+                // Token expired
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            }
             setLoading(false);
         }
     };
@@ -58,8 +60,6 @@ const AdminDashboard = () => {
     // ✅ UPDATED: Handles age properly
     const handleSave = async (data: UserData) => {
         try {
-            const token = localStorage.getItem('token');
-
             // ✅ Map frontend fields to backend schema
             const userData: any = {
                 name: `${data.firstName} ${data.lastName}`.trim(),
@@ -94,9 +94,8 @@ const AdminDashboard = () => {
 
             console.log("📤 Sending to backend:", userData);
 
-            const response = await axios.post('http://localhost:7000/api/users', userData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // ✅ Using apiClient
+            const response = await apiClient.post('/api/users', userData);
 
             console.log("✅ User created:", response.data);
             setModalOpen(false);

@@ -1,8 +1,10 @@
+// src/pages/parent/ParentChildGrades.tsx - Converted to apiClient
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, GraduationCap, BookOpen } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Grade {
     _id: string;
@@ -30,19 +32,11 @@ const ParentChildGrades = () => {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            // Fetch child info
-            const userRes = await axios.get(`http://localhost:7000/api/users/${childId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // Use apiClient
+            const userRes = await apiClient.get(`/api/users/${childId}`);
             setStudent(userRes.data.data);
 
-            // Fetch child's grades
-            const gradesRes = await axios.get(
-                `http://localhost:7000/api/grades/child/${childId}/grades`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const gradesRes = await apiClient.get(`/api/grades/child/${childId}/grades`);
             setGrades(gradesRes.data.data || []);
             setLoading(false);
         } catch (error: any) {

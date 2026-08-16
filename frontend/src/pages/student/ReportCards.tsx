@@ -1,9 +1,7 @@
-// src/pages/student/ReportCards.tsx - Student View Report Cards
-
 import { useState, useEffect } from "react";
 import { FileText, Download, Eye, Calendar, Award, BookOpen, X } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface ReportCard {
     _id: string;
@@ -34,10 +32,7 @@ const StudentReportCards = () => {
 
     const fetchReportCards = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/report-cards', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/report-cards');
             setReportCards(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -49,9 +44,7 @@ const StudentReportCards = () => {
 
     const handleDownload = async (id: string) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:7000/api/report-cards/${id}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await apiClient.get(`/api/report-cards/${id}/download`, {
                 responseType: 'blob',
             });
 
@@ -115,7 +108,6 @@ const StudentReportCards = () => {
     return (
         <DashboardLayout role="student">
             <div className="max-w-4xl mx-auto space-y-6">
-                {/* Header */}
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <Award size={24} className="text-blue-600" />
@@ -124,7 +116,6 @@ const StudentReportCards = () => {
                     <p className="text-gray-500">View your academic performance</p>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-3 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                         <p className="text-gray-500 text-sm">Total Reports</p>
@@ -146,7 +137,6 @@ const StudentReportCards = () => {
                     </div>
                 </div>
 
-                {/* Report Cards List */}
                 {reportCards.length === 0 ? (
                     <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                         <FileText size={48} className="mx-auto text-gray-300 mb-4" />
@@ -199,7 +189,6 @@ const StudentReportCards = () => {
                 )}
             </div>
 
-            {/* View Modal */}
             {showModal && selectedReport && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowModal(false)}>
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -213,7 +202,6 @@ const StudentReportCards = () => {
                         </div>
 
                         <div className="p-6 space-y-4">
-                            {/* Info */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm text-gray-500">Academic Year</p>
@@ -225,7 +213,6 @@ const StudentReportCards = () => {
                                 </div>
                             </div>
 
-                            {/* Subjects */}
                             <div>
                                 <h3 className="font-semibold text-gray-700 mb-2">Subjects</h3>
                                 <div className="bg-gray-50 rounded-xl overflow-hidden">
@@ -254,7 +241,6 @@ const StudentReportCards = () => {
                                 </div>
                             </div>
 
-                            {/* Summary */}
                             <div className="grid grid-cols-4 gap-4 bg-blue-50 rounded-xl p-4">
                                 <div className="text-center">
                                     <p className="text-sm text-gray-500">Percentage</p>
@@ -276,7 +262,6 @@ const StudentReportCards = () => {
                                 </div>
                             </div>
 
-                            {/* Remarks */}
                             {selectedReport.teacherRemarks && (
                                 <div>
                                     <p className="text-sm text-gray-500">Teacher Remarks</p>
@@ -284,7 +269,6 @@ const StudentReportCards = () => {
                                 </div>
                             )}
 
-                            {/* Actions */}
                             <div className="flex justify-end gap-3 pt-4 border-t">
                                 {selectedReport.fileUrl && (
                                     <button

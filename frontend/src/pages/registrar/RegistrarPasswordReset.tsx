@@ -1,5 +1,3 @@
-// src/pages/registrar/RegistrarPasswordReset.tsx
-
 import { useState, useEffect } from "react";
 import { 
     RefreshCw, 
@@ -16,7 +14,7 @@ import {
     EyeOff
 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface ResetRequest {
     _id: string;
@@ -60,10 +58,7 @@ const RegistrarPasswordReset = () => {
     const fetchRequests = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/password-reset/all', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/password-reset/all');
             setRequests(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -82,15 +77,13 @@ const RegistrarPasswordReset = () => {
 
         setSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post(
-                `http://localhost:7000/api/password-reset/${selectedRequest._id}/reset`,
-                { newPassword, notes },
-                { headers: { Authorization: `Bearer ${token}` } }
+            const response = await apiClient.post(
+                `/api/password-reset/${selectedRequest._id}/reset`,
+                { newPassword, notes }
             );
 
             setSuccess(true);
-            setSuccessMessage(`✅ Password reset successfully for ${selectedRequest.userId.name}`);
+            setSuccessMessage(`Password reset successfully for ${selectedRequest.userId.name}`);
             setShowResetModal(false);
             fetchRequests();
             setNewPassword("");
@@ -111,11 +104,9 @@ const RegistrarPasswordReset = () => {
     const handleCancelRequest = async (requestId: string) => {
         if (!window.confirm("Are you sure you want to cancel this reset request?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(
-                `http://localhost:7000/api/password-reset/${requestId}/cancel`,
-                { reason: "Cancelled by registrar" },
-                { headers: { Authorization: `Bearer ${token}` } }
+            await apiClient.put(
+                `/api/password-reset/${requestId}/cancel`,
+                { reason: "Cancelled by registrar" }
             );
             fetchRequests();
         } catch (error: any) {
@@ -159,7 +150,6 @@ const RegistrarPasswordReset = () => {
     return (
         <DashboardLayout role="registrar">
             <div className="space-y-6">
-                {/* Success Message */}
                 {success && (
                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 text-green-700 dark:text-green-400 flex items-center gap-3">
                         <CheckCircle size={24} />
@@ -167,7 +157,6 @@ const RegistrarPasswordReset = () => {
                     </div>
                 )}
 
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
@@ -185,7 +174,6 @@ const RegistrarPasswordReset = () => {
                     </button>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
                         <p className="text-gray-500 dark:text-gray-400 text-sm">Total</p>
@@ -211,7 +199,6 @@ const RegistrarPasswordReset = () => {
                     </div>
                 </div>
 
-                {/* Search & Filter */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
                         <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -238,7 +225,6 @@ const RegistrarPasswordReset = () => {
                     </div>
                 </div>
 
-                {/* Requests Table */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
@@ -329,7 +315,6 @@ const RegistrarPasswordReset = () => {
                 </div>
             </div>
 
-            {/* Reset Password Modal */}
             {showResetModal && selectedRequest && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">

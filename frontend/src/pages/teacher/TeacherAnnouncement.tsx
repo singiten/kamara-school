@@ -1,8 +1,7 @@
-// src/pages/teacher/TeacherAnnouncements.tsx
 import { useState, useEffect } from "react";
 import { Megaphone, Calendar, Clock, AlertCircle, Plus, X, Edit2, Trash2 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Announcement {
     _id: string;
@@ -42,10 +41,7 @@ const TeacherAnnouncements = () => {
 
     const fetchAnnouncements = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/announcements', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/announcements');
             setAnnouncements(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -58,15 +54,12 @@ const TeacherAnnouncements = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
             const url = editingId 
-                ? `http://localhost:7000/api/announcements/${editingId}`
-                : 'http://localhost:7000/api/announcements';
+                ? `/api/announcements/${editingId}`
+                : '/api/announcements';
             const method = editingId ? 'put' : 'post';
             
-            await axios[method](url, formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient[method](url, formData);
             
             setShowModal(false);
             setEditingId(null);
@@ -78,7 +71,7 @@ const TeacherAnnouncements = () => {
                 expiresAt: "",
             });
             fetchAnnouncements();
-            alert(editingId ? '✅ Announcement updated!' : '✅ Announcement created!');
+            alert(editingId ? 'Announcement updated!' : 'Announcement created!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to save announcement");
         }
@@ -87,12 +80,9 @@ const TeacherAnnouncements = () => {
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this announcement?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:7000/api/announcements/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.delete(`/api/announcements/${id}`);
             fetchAnnouncements();
-            alert('✅ Announcement deleted!');
+            alert('Announcement deleted!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to delete announcement");
         }

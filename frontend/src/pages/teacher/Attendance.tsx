@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, X, ClipboardCheck } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface AttendanceRecord {
     _id: string;
@@ -40,7 +40,6 @@ const Attendance = () => {
         remarks: "",
     });
 
-    // ✅ Fetch attendance data on load
     useEffect(() => {
         fetchAttendanceData();
         fetchStudentsAndClasses();
@@ -48,20 +47,13 @@ const Attendance = () => {
 
     const fetchAttendanceData = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            // Get teacher's classes first
-            const classesRes = await axios.get('http://localhost:7000/api/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const classesRes = await apiClient.get('/api/classes');
 
             if (classesRes.data.data.length > 0) {
                 const classId = classesRes.data.data[0]._id;
                 
-                // Get attendance for the first class
-                const attendanceRes = await axios.get(
-                    `http://localhost:7000/api/attendance/class/${classId}?semester=Semester%201&academicYear=2024/25`,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                const attendanceRes = await apiClient.get(
+                    `/api/attendance/class/${classId}?semester=Semester%201&academicYear=2024/25`
                 );
                 
                 setAttendanceRecords(attendanceRes.data.data.flatMap((record: any) => 
@@ -83,18 +75,10 @@ const Attendance = () => {
 
     const fetchStudentsAndClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            // Get students
-            const studentsRes = await axios.get('http://localhost:7000/api/users?role=student', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const studentsRes = await apiClient.get('/api/users?role=student');
             setStudents(studentsRes.data.data);
 
-            // Get teacher's classes
-            const classesRes = await axios.get('http://localhost:7000/api/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const classesRes = await apiClient.get('/api/classes');
             setClasses(classesRes.data.data);
             
             if (classesRes.data.data.length > 0) {
@@ -105,13 +89,10 @@ const Attendance = () => {
         }
     };
 
-    // ✅ Mark attendance (POST to backend)
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         try {
-            const token = localStorage.getItem('token');
-            
             const attendanceData = {
                 classId: formData.classId,
                 date: formData.date,
@@ -124,9 +105,7 @@ const Attendance = () => {
                 }]
             };
 
-            await axios.post('http://localhost:7000/api/attendance', attendanceData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.post('/api/attendance', attendanceData);
 
             setShowModal(false);
             setFormData({
@@ -137,7 +116,6 @@ const Attendance = () => {
                 remarks: "",
             });
             
-            // Refresh attendance data
             await fetchAttendanceData();
             
         } catch (error: any) {
@@ -146,7 +124,6 @@ const Attendance = () => {
         }
     };
 
-    // ✅ Calculate stats from real data
     const presentCount = attendanceRecords.filter((r) => r.status === "present").length;
     const absentCount = attendanceRecords.filter((r) => r.status === "absent").length;
     const lateCount = attendanceRecords.filter((r) => r.status === "late").length;
@@ -181,7 +158,6 @@ const Attendance = () => {
                     </button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                    {/* Class Selection */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class</label>
                         <select
@@ -197,7 +173,6 @@ const Attendance = () => {
                         </select>
                     </div>
 
-                    {/* Student Selection */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student</label>
                         <select
@@ -286,7 +261,6 @@ const Attendance = () => {
                     </button>
                 </div>
 
-                {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 flex items-center gap-4">
                         <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-lg text-green-600 dark:text-green-400"><ClipboardCheck size={25} /></div>
@@ -311,7 +285,6 @@ const Attendance = () => {
                     </div>
                 </div>
 
-                {/* Attendance Table - NO GRADE COLUMN */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">

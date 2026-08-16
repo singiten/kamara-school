@@ -1,9 +1,8 @@
-// src/pages/student/AvailableWorksheets.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Clock, Award, Calendar, Users, CheckCircle, XCircle } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Worksheet {
     _id: string;
@@ -37,10 +36,7 @@ const StudentAvailableWorksheets = () => {
 
     const fetchWorksheets = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/worksheets/available', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/worksheets/available');
             setWorksheets(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -52,10 +48,7 @@ const StudentAvailableWorksheets = () => {
 
     const handleStart = async (worksheetId: string) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`http://localhost:7000/api/worksheets/${worksheetId}/start`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.post(`/api/worksheets/${worksheetId}/start`, {});
             navigate(`/student/worksheet/${worksheetId}/attempt`);
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to start worksheet");

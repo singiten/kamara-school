@@ -1,4 +1,4 @@
-// src/pages/parent/ParentDashboard.tsx - COMPLETE WITH TYPESCRIPT FIXES
+// src/pages/parent/ParentDashboard.tsx - Converted to apiClient
 
 import { useState, useEffect } from "react";
 import { 
@@ -19,11 +19,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
-
-// ============================================
-// 📌 INTERFACES
-// ============================================
+import { apiClient } from "../../config/api";
 
 interface Child {
     _id: string;
@@ -42,7 +38,7 @@ interface Announcement {
     priority: string;
     createdAt: string;
     createdBy?: { name: string };
-    status?: string; // ✅ Added status field
+    status?: string;
 }
 
 interface Attendance {
@@ -79,16 +75,11 @@ interface Payment {
     studentFeeId?: { feeName: string };
 }
 
-// ============================================
-// 📌 MAIN COMPONENT
-// ============================================
-
 const ParentDashboard = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     
-    // ✅ State
     const [children, setChildren] = useState<Child[]>([]);
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -97,15 +88,10 @@ const ParentDashboard = () => {
     const [recentPayments, setRecentPayments] = useState<Payment[]>([]);
     const [totalOutstanding, setTotalOutstanding] = useState(0);
 
-    // ✅ Get user info with null check
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
-    const userId = user?._id || ''; // ✅ Provide fallback empty string
+    const userId = user?._id || '';
     const parentName = user?.name || 'Parent';
-
-    // ============================================
-    // 📡 FETCH DATA
-    // ============================================
 
     useEffect(() => {
         if (userId) {
@@ -126,18 +112,12 @@ const ParentDashboard = () => {
                 return;
             }
             
-            // ✅ 1. Fetch children
-            await fetchChildren(token);
+            await fetchChildren();
+            await fetchAnnouncements();
+            await fetchFeesAndPayments();
             
-            // ✅ 2. Fetch announcements
-            await fetchAnnouncements(token);
-            
-            // ✅ 3. Fetch fees and payments
-            await fetchFeesAndPayments(token);
-            
-            // ✅ 4. Fetch attendance and grades (if children exist)
             if (children.length > 0) {
-                await fetchChildrenData(token);
+                await fetchChildrenData();
             }
             
             setLoading(false);
@@ -148,13 +128,9 @@ const ParentDashboard = () => {
         }
     };
 
-    // ✅ Fetch Children
-    const fetchChildren = async (token: string) => {
+    const fetchChildren = async () => {
         try {
-            const response = await axios.get(
-                `http://localhost:7000/api/parents/${userId}/children`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get(`/api/parents/${userId}/children`);
             const childrenData = response.data.data || [];
             setChildren(childrenData);
             return childrenData;
@@ -164,15 +140,10 @@ const ParentDashboard = () => {
         }
     };
 
-    // ✅ Fetch Announcements
-    const fetchAnnouncements = async (token: string) => {
+    const fetchAnnouncements = async () => {
         try {
-            const response = await axios.get(
-                'http://localhost:7000/api/announcements',
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await apiClient.get('/api/announcements');
             const announcementsData = response.data.data || [];
-            // Filter for parent-relevant announcements
             const parentAnnouncements = announcementsData.filter(
                 (a: any) => a.audience === 'parents' || a.audience === 'all' || a.audience === 'All'
             );
@@ -182,15 +153,12 @@ const ParentDashboard = () => {
         }
     };
 
-    // ✅ Fetch Fees and Payments
-    const fetchFeesAndPayments = async (token: string) => {
+    const fetchFeesAndPayments = async () => {
         try {
-            // Get children IDs
             const childIds = children.map(c => c._id);
             
             if (childIds.length === 0) return;
 
-            // ✅ Fetch fee status for each child
             let totalFees = 0;
             let paid = 0;
             let pending = 0;
@@ -199,10 +167,7 @@ const ParentDashboard = () => {
 
             for (const childId of childIds) {
                 try {
-                    const feeRes = await axios.get(
-                        `http://localhost:7000/api/finance/parent/student-fees?studentId=${childId}`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
+                    const feeRes = await apiClient.get(`/api/finance/parent/student-fees?studentId=${childId}`);
                     
                     const fees = feeRes.data.data || [];
                     totalFees += fees.length;
@@ -216,7 +181,6 @@ const ParentDashboard = () => {
                     const overdueCount = fees.filter((f: any) => f.isOverdue).length;
                     overdue += overdueCount;
                     
-                    // Calculate outstanding balance
                     fees.forEach((f: any) => {
                         if (f.status !== 'paid') {
                             outstanding += f.totalAmount || f.amount || 0;
@@ -230,13 +194,9 @@ const ParentDashboard = () => {
             setFeeStatus({ totalFees, paid, pending, overdue });
             setTotalOutstanding(outstanding);
 
-            // ✅ Fetch recent payments
             if (childIds.length > 0) {
                 try {
-                    const payRes = await axios.get(
-                        `http://localhost:7000/api/finance/parent/payments?studentId=${childIds[0]}`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
+                    const payRes = await apiClient.get(`/api/finance/parent/payments?studentId=${childIds[0]}`);
                     setRecentPayments(payRes.data.data?.slice(0, 5) || []);
                 } catch (error) {
                     console.error("Error fetching payments:", error);
@@ -247,21 +207,14 @@ const ParentDashboard = () => {
         }
     };
 
-    // ✅ Fetch Attendance and Grades for Children
-    const fetchChildrenData = async (token: string) => {
+    const fetchChildrenData = async () => {
         try {
-            // For now, we'll use mock or limited data
-            // In production, you would fetch from actual attendance and grade endpoints
             setAttendance([]);
             setGrades([]);
         } catch (error) {
             console.error("Error fetching children data:", error);
         }
     };
-
-    // ============================================
-    // 📊 HELPERS
-    // ============================================
 
     const getPriorityColor = (priority: string) => {
         const colors: Record<string, string> = {
@@ -301,10 +254,6 @@ const ParentDashboard = () => {
         return new Date(date).toLocaleDateString();
     };
 
-    // ============================================
-    // 🎨 RENDER
-    // ============================================
-
     if (loading) {
         return (
             <DashboardLayout role="parent">
@@ -337,13 +286,11 @@ const ParentDashboard = () => {
         );
     }
 
-    // ✅ Safe filter with optional chaining
     const publishedAnnouncements = announcements.filter(a => a.status === 'Published' || a.status === 'published');
 
     return (
         <DashboardLayout role="parent">
             <div className="max-w-6xl mx-auto space-y-6">
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -362,7 +309,6 @@ const ParentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
                         <div className="flex items-center justify-between">
@@ -410,7 +356,6 @@ const ParentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Children Overview */}
                 {children.length > 0 && (
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
@@ -452,9 +397,7 @@ const ParentDashboard = () => {
                     </div>
                 )}
 
-                {/* Announcements & Recent Payments */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Announcements */}
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -491,7 +434,6 @@ const ParentDashboard = () => {
                         )}
                     </div>
 
-                    {/* Recent Payments */}
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -533,7 +475,6 @@ const ParentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Quick Overview */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                         <ClipboardCheck size={20} className="text-blue-600" />
@@ -559,7 +500,6 @@ const ParentDashboard = () => {
                     </div>
                 </div>
 
-                {/* Quick Actions */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Link 
                         to="/parent/payments"

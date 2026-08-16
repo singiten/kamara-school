@@ -1,8 +1,7 @@
-// src/pages/teacher/Worksheets.tsx
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Eye, Send, Clock, Users, FileText, X } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Question {
     question: string;
@@ -65,10 +64,7 @@ const TeacherWorksheets = () => {
 
     const fetchWorksheets = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/worksheets', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/worksheets');
             setWorksheets(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -80,10 +76,7 @@ const TeacherWorksheets = () => {
 
     const fetchClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/classes');
             setClasses(response.data.data || []);
         } catch (error) {
             console.error("Error fetching classes:", error);
@@ -122,21 +115,18 @@ const TeacherWorksheets = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
             const url = editingId
-                ? `http://localhost:7000/api/worksheets/${editingId}`
-                : 'http://localhost:7000/api/worksheets';
+                ? `/api/worksheets/${editingId}`
+                : '/api/worksheets';
             const method = editingId ? 'put' : 'post';
 
-            const response = await axios[method](url, formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient[method](url, formData);
 
             setShowModal(false);
             setEditingId(null);
             resetForm();
             fetchWorksheets();
-            alert(editingId ? '✅ Worksheet updated!' : '✅ Worksheet created!');
+            alert(editingId ? 'Worksheet updated!' : 'Worksheet created!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to save worksheet");
         }
@@ -144,12 +134,9 @@ const TeacherWorksheets = () => {
 
     const handlePublish = async (id: string) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:7000/api/worksheets/${id}/publish`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.put(`/api/worksheets/${id}/publish`, {});
             fetchWorksheets();
-            alert('✅ Worksheet published!');
+            alert('Worksheet published!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to publish");
         }
@@ -157,12 +144,9 @@ const TeacherWorksheets = () => {
 
     const handleClose = async (id: string) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:7000/api/worksheets/${id}/close`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.put(`/api/worksheets/${id}/close`, {});
             fetchWorksheets();
-            alert('✅ Worksheet closed!');
+            alert('Worksheet closed!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to close");
         }
@@ -171,12 +155,9 @@ const TeacherWorksheets = () => {
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this worksheet?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:7000/api/worksheets/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.delete(`/api/worksheets/${id}`);
             fetchWorksheets();
-            alert('✅ Worksheet deleted!');
+            alert('Worksheet deleted!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to delete");
         }
@@ -330,11 +311,9 @@ const TeacherWorksheets = () => {
                         </div>
                     </div>
 
-                    {/* Questions Section */}
                     <div className="border-t pt-4 mt-4">
                         <h4 className="text-sm font-semibold text-gray-700 mb-3">Questions ({formData.questions.length})</h4>
 
-                        {/* Add Question Form */}
                         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
                             <div className="grid grid-cols-1 gap-3">
                                 <input
@@ -398,7 +377,6 @@ const TeacherWorksheets = () => {
                             </div>
                         </div>
 
-                        {/* Question List */}
                         <div className="space-y-2 max-h-40 overflow-y-auto">
                             {formData.questions.map((q, idx) => (
                                 <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">

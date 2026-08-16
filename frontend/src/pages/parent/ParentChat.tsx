@@ -1,4 +1,4 @@
-// src/pages/parent/ParentChat.tsx
+// src/pages/parent/ParentChat.tsx - Converted to apiClient
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -15,10 +15,10 @@ const ParentChat: React.FC = () => {
     useEffect(() => {
         const socket = getSocket();
         if (socket) {
-            console.log('✅ Parent chat socket connected');
+            console.log('Parent chat socket connected');
         }
         return () => {
-            console.log('🔌 Parent chat socket disconnected');
+            console.log('Parent chat socket disconnected');
         };
     }, []);
 

@@ -1,3 +1,5 @@
+// src/pages/parent/ParentAttendance.tsx - Converted to apiClient
+
 import { ClipboardCheck } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
 import { useAppContext } from "../../context/AppContext";

@@ -1,5 +1,3 @@
-// src/pages/student/StudentDashboard.tsx - COMPLETE WITH RESOURCES & NOTIFICATIONS
-
 import { useState, useEffect } from "react";
 import { 
     Bell, 
@@ -19,11 +17,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
-
-// ============================================
-// 📌 INTERFACES
-// ============================================
+import { apiClient } from "../../config/api";
 
 interface Announcement {
     _id: string;
@@ -63,10 +57,6 @@ interface GradeSummary {
     completed: number;
 }
 
-// ============================================
-// 📌 MAIN COMPONENT
-// ============================================
-
 const StudentDashboard = () => {
     const navigate = useNavigate();
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -77,12 +67,10 @@ const StudentDashboard = () => {
     const [notificationCount, setNotificationCount] = useState(0);
     const [greeting, setGreeting] = useState("");
 
-    // ✅ Get user info
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
     const studentName = user?.name || 'Student';
 
-    // ✅ Set greeting based on time
     useEffect(() => {
         const hour = new Date().getHours();
         if (hour < 12) setGreeting("Good Morning ☀️");
@@ -90,34 +78,22 @@ const StudentDashboard = () => {
         else setGreeting("Good Evening 🌙");
     }, []);
 
-    // ✅ Fetch all data
     useEffect(() => {
         fetchAllData();
     }, []);
 
     const fetchAllData = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            // 1️⃣ Fetch announcements
-            const annRes = await axios.get('http://localhost:7000/api/announcements', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const annRes = await apiClient.get('/api/announcements');
             const announcementsData = annRes.data.data || [];
             setAnnouncements(announcementsData.slice(0, 3));
             setNotificationCount(announcementsData.length);
 
-            // 2️⃣ Fetch recent resources
-            const resRes = await axios.get('http://localhost:7000/api/resources/recent?limit=5', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const resRes = await apiClient.get('/api/resources/recent?limit=5');
             setRecentResources(resRes.data.data || []);
 
-            // 3️⃣ Fetch fee status
             try {
-                const feeRes = await axios.get('http://localhost:7000/api/finance/parent/student-fees', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const feeRes = await apiClient.get('/api/finance/parent/student-fees');
                 const fees = feeRes.data.data || [];
                 const total = fees.length;
                 const paid = fees.filter((f: any) => f.status === 'paid').length;
@@ -128,11 +104,8 @@ const StudentDashboard = () => {
                 console.error("Error fetching fees:", error);
             }
 
-            // 4️⃣ Fetch grade summary
             try {
-                const gradeRes = await axios.get('http://localhost:7000/api/grades/my-summary', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const gradeRes = await apiClient.get('/api/grades/my-summary');
                 setGradeSummary(gradeRes.data.data || null);
             } catch (error) {
                 console.error("Error fetching grades:", error);
@@ -144,10 +117,6 @@ const StudentDashboard = () => {
             setLoading(false);
         }
     };
-
-    // ============================================
-    // 📌 HELPERS
-    // ============================================
 
     const getFileIcon = (fileType: string) => {
         const icons: Record<string, string> = {
@@ -199,9 +168,7 @@ const StudentDashboard = () => {
 
     const handleDownload = async (id: string, fileName: string) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:7000/api/resources/${id}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await apiClient.get(`/api/resources/${id}/download`, {
                 responseType: 'blob',
             });
 
@@ -217,10 +184,6 @@ const StudentDashboard = () => {
             alert(error.response?.data?.error || "Failed to download resource");
         }
     };
-
-    // ============================================
-    // 🎨 RENDER
-    // ============================================
 
     if (loading) {
         return (
@@ -238,9 +201,6 @@ const StudentDashboard = () => {
     return (
         <DashboardLayout role="student">
             <div className="max-w-6xl mx-auto space-y-6">
-                {/* ============================================
-                    HEADER WITH GREETING & NOTIFICATIONS
-                    ============================================ */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
@@ -272,9 +232,6 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* ============================================
-                    STATS CARDS
-                    ============================================ */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition">
                         <div className="flex items-center justify-between">
@@ -330,9 +287,6 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* ============================================
-                    QUICK LINKS
-                    ============================================ */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                         { icon: <Award size={20} />, label: 'My Grades', path: '/student/grades', color: 'blue' },
@@ -354,9 +308,6 @@ const StudentDashboard = () => {
                     ))}
                 </div>
 
-                {/* ============================================
-                    RECENT RESOURCES
-                    ============================================ */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="flex items-center justify-between p-5 border-b border-gray-100">
                         <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -419,9 +370,6 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* ============================================
-                    ANNOUNCEMENTS SECTION
-                    ============================================ */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="flex items-center justify-between p-5 border-b border-gray-100">
                         <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -481,9 +429,6 @@ const StudentDashboard = () => {
                     </div>
                 </div>
 
-                {/* ============================================
-                    QUICK TIPS / MOTIVATIONAL
-                    ============================================ */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-white rounded-xl shadow-sm">

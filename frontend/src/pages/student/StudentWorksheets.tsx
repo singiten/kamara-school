@@ -1,5 +1,3 @@
-// src/pages/student/StudentWorksheets.tsx - USING SUBMITTED LOGIC
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -15,7 +13,7 @@ import {
     BookOpen
 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Worksheet {
     _id: string;
@@ -28,7 +26,6 @@ interface Worksheet {
     score?: number | null;
     percentage?: number | null;
     teacherName?: string;
-    // ✅ KEY FIELD: This tells us if student submitted
     isSubmitted?: boolean;
     submittedAt?: string | null;
     status?: 'pending' | 'submitted' | 'completed' | 'overdue';
@@ -48,10 +45,7 @@ const StudentWorksheets = () => {
 
     const fetchWorksheets = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:7000/api/worksheets/my-worksheets', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/api/worksheets/my-worksheets');
 
             if (response.data.success) {
                 setWorksheets(response.data.data || []);
@@ -65,7 +59,6 @@ const StudentWorksheets = () => {
         }
     };
 
-    // ✅ SIMPLE: Check if worksheet was submitted
     const isSubmitted = (w: Worksheet) => {
         return w.isSubmitted === true || 
                w.status === 'submitted' || 
@@ -135,7 +128,6 @@ const StudentWorksheets = () => {
     return (
         <DashboardLayout role="student">
             <div className="space-y-6">
-                {/* Header */}
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <BookOpen size={24} className="text-blue-600" />
@@ -144,7 +136,6 @@ const StudentWorksheets = () => {
                     <p className="text-gray-500">Complete worksheets to test your knowledge</p>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-3 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-4 text-center border">
                         <p className="text-gray-500 text-sm">Total</p>
@@ -164,7 +155,6 @@ const StudentWorksheets = () => {
                     </div>
                 </div>
 
-                {/* Search & Filter */}
                 <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
                         <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -191,7 +181,6 @@ const StudentWorksheets = () => {
                     </div>
                 </div>
 
-                {/* List */}
                 <div className="space-y-4">
                     {filteredWorksheets.length === 0 ? (
                         <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-500">
@@ -232,7 +221,6 @@ const StudentWorksheets = () => {
                                             </span>
 
                                             {submitted ? (
-                                                // ✅ REVIEW BUTTON - Shows when submitted
                                                 <button
                                                     onClick={() => navigate(`/student/worksheets/${w._id}/review`)}
                                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center gap-1"
@@ -240,7 +228,6 @@ const StudentWorksheets = () => {
                                                     <Eye size={16} /> Review
                                                 </button>
                                             ) : (
-                                                // Start button for pending worksheets
                                                 <button
                                                     onClick={() => navigate(`/student/worksheets/${w._id}/attempt`)}
                                                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-1"

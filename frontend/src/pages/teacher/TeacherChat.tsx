@@ -1,5 +1,3 @@
-// src/pages/teacher/TeacherChat.tsx
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, BookOpen } from 'lucide-react';
@@ -15,10 +13,10 @@ const TeacherChat: React.FC = () => {
     useEffect(() => {
         const socket = getSocket();
         if (socket) {
-            console.log('✅ Teacher chat socket connected');
+            console.log('Teacher chat socket connected');
         }
         return () => {
-            console.log('🔌 Teacher chat socket disconnected');
+            console.log('Teacher chat socket disconnected');
         };
     }, []);
 

@@ -1,12 +1,10 @@
-// src/pages/teacher/Resources.tsx - COMPLETE SAFE VERSION
-
 import { useState, useEffect } from "react";
 import { 
     Upload, FileText, Download, Trash2, Search, 
     X, Check, RefreshCw, School 
 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Resource {
     _id: string;
@@ -76,17 +74,14 @@ const TeacherResources = () => {
 
     const fetchResources = async () => {
         try {
-            const token = localStorage.getItem('token');
-            let url = 'http://localhost:7000/api/resources';
+            let url = '/api/resources';
             const params = new URLSearchParams();
             if (filterClassLevel) params.append('classLevel', filterClassLevel);
             if (filterSubject) params.append('subject', filterSubject);
             if (searchTerm) params.append('search', searchTerm);
             if (params.toString()) url += `?${params.toString()}`;
 
-            const response = await axios.get(url, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get(url);
             setResources(response.data.data || []);
             setLoading(false);
         } catch (error: any) {
@@ -95,30 +90,20 @@ const TeacherResources = () => {
         }
     };
 
-    // ✅ Fetch teacher's assigned classes
     const fetchTeacherClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            // ✅ Get teacher's classes from the API
-            const response = await axios.get('http://localhost:7000/api/resources/teacher/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
+            const response = await apiClient.get('/api/resources/teacher/classes');
             const classesData = response.data.data || [];
             setTeacherClasses(classesData);
-            console.log('📚 Teacher Classes loaded:', classesData.length, 'classes');
+            console.log('Teacher Classes loaded:', classesData.length, 'classes');
             
-            // ✅ If no classes, try fallback
             if (classesData.length === 0) {
-                console.log('⚠️ No classes from /teacher/classes, trying /auth/me');
-                const meRes = await axios.get('http://localhost:7000/api/auth/me', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                console.log('No classes from /teacher/classes, trying /auth/me');
+                const meRes = await apiClient.get('/api/auth/me');
                 const user = meRes.data.data;
                 if (user.assignedClasses && user.assignedClasses.length > 0) {
                     setTeacherClasses(user.assignedClasses);
-                    console.log('📚 Found classes from /me:', user.assignedClasses.length);
+                    console.log('Found classes from /me:', user.assignedClasses.length);
                 }
             }
         } catch (error) {
@@ -177,7 +162,6 @@ const TeacherResources = () => {
 
         setUploading(true);
         try {
-            const token = localStorage.getItem('token');
             const formDataToSend = new FormData();
             formDataToSend.append('title', formData.title);
             formDataToSend.append('description', formData.description);
@@ -194,22 +178,16 @@ const TeacherResources = () => {
             }
 
             const url = editingId 
-                ? `http://localhost:7000/api/resources/${editingId}`
-                : 'http://localhost:7000/api/resources/upload';
+                ? `/api/resources/${editingId}`
+                : '/api/resources/upload';
             const method = editingId ? 'put' : 'post';
 
-            await axios({
-                method,
-                url,
-                data: formDataToSend,
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data',
-                },
+            await apiClient[method](url, formDataToSend, {
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
 
             setSuccess(true);
-            setSuccessMessage(editingId ? '✅ Resource updated successfully!' : '✅ Resource uploaded successfully!');
+            setSuccessMessage(editingId ? 'Resource updated successfully!' : 'Resource uploaded successfully!');
             setShowModal(false);
             resetForm();
             fetchResources();
@@ -244,12 +222,9 @@ const TeacherResources = () => {
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this resource?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:7000/api/resources/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.delete(`/api/resources/${id}`);
             fetchResources();
-            alert('✅ Resource deleted successfully!');
+            alert('Resource deleted successfully!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to delete resource");
         }
@@ -257,9 +232,7 @@ const TeacherResources = () => {
 
     const handleDownload = async (id: string, fileName: string) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:7000/api/resources/${id}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await apiClient.get(`/api/resources/${id}/download`, {
                 responseType: 'blob',
             });
 
@@ -300,12 +273,10 @@ const TeacherResources = () => {
         return labels[level] || level;
     };
 
-    // ✅ Safely extract unique grades
     const availableGrades = teacherClasses && teacherClasses.length > 0 
         ? [...new Set(teacherClasses.map(c => String(c.grade)))] 
         : [];
 
-    // ✅ If loading, show spinner
     if (loading) {
         return (
             <DashboardLayout role="teacher">
@@ -319,7 +290,6 @@ const TeacherResources = () => {
         );
     }
 
-    // ✅ Check if there was an error but we have some data
     const hasResources = resources && resources.length > 0;
     const hasClasses = teacherClasses && teacherClasses.length > 0;
 
@@ -333,7 +303,6 @@ const TeacherResources = () => {
                     </div>
                 )}
 
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
@@ -351,7 +320,6 @@ const TeacherResources = () => {
                     </button>
                 </div>
 
-                {/* Teacher Classes Info - SAFE */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-2">
                         <School size={18} className="text-blue-600 dark:text-blue-400" />
@@ -370,7 +338,6 @@ const TeacherResources = () => {
                     </div>
                 </div>
 
-                {/* Stats - SAFE */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
                         <p className="text-gray-500 dark:text-gray-400 text-sm">Total Resources</p>
@@ -391,7 +358,6 @@ const TeacherResources = () => {
                     </div>
                 </div>
 
-                {/* Search & Filter */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 relative">
@@ -432,7 +398,6 @@ const TeacherResources = () => {
                     </div>
                 </div>
 
-                {/* Resources Table - SAFE */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
@@ -508,7 +473,7 @@ const TeacherResources = () => {
                 </div>
             </div>
 
-            {/* Upload Modal - Only show if we have classes */}
+            {/* Upload Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowModal(false)}>
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -522,7 +487,6 @@ const TeacherResources = () => {
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            {/* Title */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                                 <input
@@ -535,7 +499,6 @@ const TeacherResources = () => {
                                 />
                             </div>
 
-                            {/* Description */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                                 <textarea
@@ -547,7 +510,6 @@ const TeacherResources = () => {
                                 />
                             </div>
 
-                            {/* Subject & Topic */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
@@ -572,7 +534,6 @@ const TeacherResources = () => {
                                 </div>
                             </div>
 
-                            {/* Grade Selection - SAFE */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Grade *</label>
                                 {!hasClasses ? (
@@ -607,7 +568,6 @@ const TeacherResources = () => {
                                 )}
                             </div>
 
-                            {/* Section Selection - SAFE */}
                             {formData.grade && hasClasses && (
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
@@ -675,7 +635,6 @@ const TeacherResources = () => {
                                 </div>
                             )}
 
-                            {/* Semester & Academic Year */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
@@ -703,7 +662,6 @@ const TeacherResources = () => {
                                 </div>
                             </div>
 
-                            {/* File Upload */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">File *</label>
                                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition">
@@ -733,7 +691,6 @@ const TeacherResources = () => {
                                 </div>
                             </div>
 
-                            {/* Actions */}
                             <div className="flex justify-end gap-3 pt-4 border-t">
                                 <button
                                     type="button"

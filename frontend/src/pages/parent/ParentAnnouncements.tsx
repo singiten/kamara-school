@@ -1,9 +1,9 @@
-// src/pages/parent/ParentAnnouncements.tsx - ENHANCED UI
+// src/pages/parent/ParentAnnouncements.tsx - Converted to apiClient
 
 import { useState, useEffect } from "react";
 import { Megaphone, Calendar, Clock, AlertCircle, Users, GraduationCap, Bell, Sparkles } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface Announcement {
     _id: string;
@@ -69,11 +69,8 @@ const ParentAnnouncements = () => {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('token');
-            
-            const annRes = await axios.get('http://localhost:7000/api/announcements', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // Use apiClient
+            const annRes = await apiClient.get('/api/announcements');
             setAnnouncements(annRes.data.data || []);
 
             const userStr = localStorage.getItem('user');
@@ -81,10 +78,7 @@ const ParentAnnouncements = () => {
             const userId = user?._id;
 
             if (userId) {
-                const childRes = await axios.get(
-                    `http://localhost:7000/api/parents/${userId}/children`,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+                const childRes = await apiClient.get(`/api/parents/${userId}/children`);
                 setChildren(childRes.data.data || []);
             }
 
@@ -134,7 +128,6 @@ const ParentAnnouncements = () => {
     return (
         <DashboardLayout role="parent">
             <div className="max-w-4xl mx-auto space-y-6">
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl">
@@ -155,7 +148,6 @@ const ParentAnnouncements = () => {
                     )}
                 </div>
 
-                {/* Children Quick View */}
                 {children.length > 0 && (
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                         <div className="flex items-center gap-2 mb-2">
@@ -172,7 +164,6 @@ const ParentAnnouncements = () => {
                     </div>
                 )}
 
-                {/* Stats */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                         <p className="text-gray-500 text-sm">For You</p>
@@ -186,7 +177,6 @@ const ParentAnnouncements = () => {
                     </div>
                 </div>
 
-                {/* Announcements List */}
                 {relevantAnnouncements.length === 0 ? (
                     <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
                         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -231,7 +221,6 @@ const ParentAnnouncements = () => {
                                                 {announcement.content}
                                             </p>
 
-                                            {/* Child-specific context */}
                                             {announcement.audience === 'students' && children.length > 0 && (
                                                 <div className="mt-2 flex items-center gap-1 text-sm text-blue-600">
                                                     <GraduationCap size={14} />

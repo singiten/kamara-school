@@ -1,6 +1,8 @@
+// src/pages/admin/AdminAttendance.tsx - WITH apiClient
+
 import { useState, useEffect } from "react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface AttendanceSummary {
     totalClasses: number;
@@ -42,22 +44,14 @@ const AdminAttendance = () => {
 
     const fetchDashboardData = async () => {
         try {
-            const token = localStorage.getItem('token');
-
-            // 1️⃣ Get all classes
-            const classesRes = await axios.get('http://localhost:7000/api/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // ✅ Use apiClient
+            const classesRes = await apiClient.get('/api/classes');
             setClasses(classesRes.data.data);
 
-            // 2️⃣ Get attendance reports
-            const reportRes = await axios.get('http://localhost:7000/api/attendance/reports?semester=Semester%201&academicYear=2024/25', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const reportRes = await apiClient.get('/api/attendance/reports?semester=Semester%201&academicYear=2024/25');
 
             const data = reportRes.data.data;
 
-            // 3️⃣ Set summary
             if (data && data.summary) {
                 setSummary({
                     totalClasses: data.summary.totalClasses || 0,
@@ -69,7 +63,6 @@ const AdminAttendance = () => {
                 });
             }
 
-            // 4️⃣ Set recent records (last 5)
             if (data && data.records) {
                 setRecentRecords(data.records.slice(0, 5));
             }
@@ -86,12 +79,9 @@ const AdminAttendance = () => {
         if (!classId) return;
 
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(
-                `http://localhost:7000/api/attendance/class/${classId}?semester=Semester%201&academicYear=2024/25`,
-                { headers: { Authorization: `Bearer ${token}` } }
+            const res = await apiClient.get(
+                `/api/attendance/class/${classId}?semester=Semester%201&academicYear=2024/25`
             );
-
             setRecentRecords(res.data.data.slice(0, 5));
         } catch (error) {
             console.error("Error fetching class attendance:", error);

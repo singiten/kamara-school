@@ -1,5 +1,3 @@
-// src/pages/teacher/ReportCards.tsx - FIXED DROPDOWNS
-
 import { useState, useEffect } from "react";
 import { 
     Upload, FileText, Download, Trash2, Search, 
@@ -7,7 +5,7 @@ import {
     Eye, Edit2, Plus, Filter, Loader2
 } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import axios from "axios";
+import { apiClient } from "../../config/api";
 
 interface ReportCard {
     _id: string;
@@ -105,16 +103,13 @@ const TeacherReportCards = () => {
 
     const fetchReportCards = async () => {
         try {
-            const token = localStorage.getItem('token');
-            let url = 'http://localhost:7000/api/report-cards';
+            let url = '/api/report-cards';
             const params = new URLSearchParams();
             if (filterTerm) params.append('term', filterTerm);
             if (filterAcademicYear) params.append('academicYear', filterAcademicYear);
             if (params.toString()) url += `?${params.toString()}`;
 
-            const response = await axios.get(url, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get(url);
             setReportCards(response.data.data || []);
         } catch (error: any) {
             console.error("Error fetching report cards:", error);
@@ -124,29 +119,18 @@ const TeacherReportCards = () => {
     const fetchStudents = async () => {
         try {
             setLoadingStudents(true);
-            const token = localStorage.getItem('token');
-            
-            // ✅ First try to get students from registrar
-            const response = await axios.get('http://localhost:7000/api/registrar/students', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
+            const response = await apiClient.get('/api/registrar/students');
             const studentsData = response.data.data || [];
             setStudents(studentsData);
-            console.log('📚 Students loaded:', studentsData.length);
+            console.log('Students loaded:', studentsData.length);
             setLoadingStudents(false);
         } catch (error: any) {
             console.error("Error fetching students:", error);
             setLoadingStudents(false);
-            
-            // ✅ Fallback: Try to get students from another endpoint
             try {
-                const token = localStorage.getItem('token');
-                const response = await axios.get('http://localhost:7000/api/users?role=student', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const response = await apiClient.get('/api/users?role=student');
                 setStudents(response.data.data || []);
-                console.log('📚 Students loaded (fallback):', response.data.data?.length);
+                console.log('Students loaded (fallback):', response.data.data?.length);
             } catch (fallbackError) {
                 console.error("Fallback error fetching students:", fallbackError);
             }
@@ -156,29 +140,18 @@ const TeacherReportCards = () => {
     const fetchClasses = async () => {
         try {
             setLoadingClasses(true);
-            const token = localStorage.getItem('token');
-            
-            // ✅ First try to get classes from registrar
-            const response = await axios.get('http://localhost:7000/api/registrar/classes', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
+            const response = await apiClient.get('/api/registrar/classes');
             const classesData = response.data.data || [];
             setClasses(classesData);
-            console.log('📚 Classes loaded:', classesData.length);
+            console.log('Classes loaded:', classesData.length);
             setLoadingClasses(false);
         } catch (error: any) {
             console.error("Error fetching classes:", error);
             setLoadingClasses(false);
-            
-            // ✅ Fallback: Try to get classes from another endpoint
             try {
-                const token = localStorage.getItem('token');
-                const response = await axios.get('http://localhost:7000/api/classes', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const response = await apiClient.get('/api/classes');
                 setClasses(response.data.data || []);
-                console.log('📚 Classes loaded (fallback):', response.data.data?.length);
+                console.log('Classes loaded (fallback):', response.data.data?.length);
             } catch (fallbackError) {
                 console.error("Fallback error fetching classes:", fallbackError);
             }
@@ -235,7 +208,6 @@ const TeacherReportCards = () => {
 
         setUploading(true);
         try {
-            const token = localStorage.getItem('token');
             const formDataToSend = new FormData();
             formDataToSend.append('studentId', formData.studentId);
             formDataToSend.append('classId', formData.classId);
@@ -255,15 +227,12 @@ const TeacherReportCards = () => {
                 formDataToSend.append('file', selectedFile);
             }
 
-            await axios.post('http://localhost:7000/api/report-cards/upload', formDataToSend, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data',
-                },
+            await apiClient.post('/api/report-cards/upload', formDataToSend, {
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
 
             setSuccess(true);
-            setSuccessMessage('✅ Report card uploaded successfully!');
+            setSuccessMessage('Report card uploaded successfully!');
             setShowModal(false);
             resetForm();
             fetchReportCards();
@@ -306,12 +275,9 @@ const TeacherReportCards = () => {
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this report card?")) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:7000/api/report-cards/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.delete(`/api/report-cards/${id}`);
             fetchReportCards();
-            alert('✅ Report card deleted successfully!');
+            alert('Report card deleted successfully!');
         } catch (error: any) {
             alert(error.response?.data?.error || "Failed to delete report card");
         }
@@ -319,9 +285,7 @@ const TeacherReportCards = () => {
 
     const handleDownload = async (id: string) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:7000/api/report-cards/${id}/download`, {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await apiClient.get(`/api/report-cards/${id}/download`, {
                 responseType: 'blob',
             });
 
@@ -397,7 +361,6 @@ const TeacherReportCards = () => {
                     </div>
                 )}
 
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
@@ -415,7 +378,6 @@ const TeacherReportCards = () => {
                     </button>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700">
                         <p className="text-gray-500 dark:text-gray-400 text-sm">Total Reports</p>
@@ -441,7 +403,6 @@ const TeacherReportCards = () => {
                     </div>
                 </div>
 
-                {/* Search & Filter */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 relative">
@@ -490,7 +451,6 @@ const TeacherReportCards = () => {
                     </div>
                 </div>
 
-                {/* Report Cards Table */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
@@ -582,7 +542,6 @@ const TeacherReportCards = () => {
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            {/* Student & Class - FIXED */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student *</label>
@@ -640,8 +599,6 @@ const TeacherReportCards = () => {
                                 </div>
                             </div>
 
-                            {/* Rest of the form remains the same... */}
-                            {/* Term & Year */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Term *</label>
@@ -673,7 +630,6 @@ const TeacherReportCards = () => {
                                 </div>
                             </div>
 
-                            {/* Subjects */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subjects & Grades</label>
                                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
@@ -740,7 +696,6 @@ const TeacherReportCards = () => {
                                 </div>
                             </div>
 
-                            {/* Overall Grade & Remarks */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Overall Grade</label>
@@ -780,7 +735,6 @@ const TeacherReportCards = () => {
                                 />
                             </div>
 
-                            {/* File Upload */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Report Card File (PDF)</label>
                                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition">
@@ -802,16 +756,15 @@ const TeacherReportCards = () => {
                                             </div>
                                         ) : (
                                             <div>
-                                                    <Upload size={32} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-                                                    <p className="text-gray-500 dark:text-gray-400">Click to upload PDF</p>
-                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Only PDF files (Max 20MB)</p>
+                                                <Upload size={32} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
+                                                <p className="text-gray-500 dark:text-gray-400">Click to upload PDF</p>
+                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Only PDF files (Max 20MB)</p>
                                             </div>
                                         )}
                                     </label>
                                 </div>
                             </div>
 
-                            {/* Visibility */}
                             <div className="flex gap-6">
                                 <label className="flex items-center gap-2">
                                     <input
@@ -833,7 +786,6 @@ const TeacherReportCards = () => {
                                 </label>
                             </div>
 
-                            {/* Actions */}
                             <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
                                 <button
                                     type="button"
@@ -862,7 +814,7 @@ const TeacherReportCards = () => {
                 </div>
             )}
 
-            {/* View Modal (same as before) */}
+            {/* View Modal */}
             {showViewModal && selectedReport && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowViewModal(false)}>
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -874,7 +826,6 @@ const TeacherReportCards = () => {
                         </div>
 
                         <div className="p-6 space-y-4">
-                            {/* Student Info */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Student</p>
@@ -898,7 +849,6 @@ const TeacherReportCards = () => {
                                 </div>
                             </div>
 
-                            {/* Subjects */}
                             <div>
                                 <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Subjects</h3>
                                 <div className="bg-gray-50 dark:bg-gray-700 rounded-xl overflow-hidden">
@@ -927,7 +877,6 @@ const TeacherReportCards = () => {
                                 </div>
                             </div>
 
-                            {/* Summary */}
                             <div className="grid grid-cols-4 gap-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
                                 <div className="text-center">
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
@@ -949,7 +898,6 @@ const TeacherReportCards = () => {
                                 </div>
                             </div>
 
-                            {/* Remarks */}
                             {selectedReport.teacherRemarks && (
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Teacher Remarks</p>
@@ -957,7 +905,6 @@ const TeacherReportCards = () => {
                                 </div>
                             )}
 
-                            {/* Actions */}
                             <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
                                 {selectedReport.fileUrl && (
                                     <button
