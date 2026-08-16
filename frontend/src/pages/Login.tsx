@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, AlertCircle, Sparkles } from "lucide-react";
 import axios from "axios";
+import { API_URL } from "../config/api";
+
 
 // ✅ IMPORT LOGO
 import schoolLogo from '../assets/logo.png';
@@ -25,7 +27,7 @@ const Login = () => {
         setError("");
 
         try {
-            const response = await axios.post('http://localhost:7000/api/auth/login', {
+            const response = await axios.post(`${API_URL}/api/auth/login`, {
                 email,
                 password
             });
