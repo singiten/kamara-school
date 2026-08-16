@@ -15,7 +15,7 @@ import {
     Sun,
     Moon
 } from "lucide-react";
-import axios from "axios";
+import { apiClient } from "../config/api";
 import { getSocket } from "../services/socket";
 import { useTheme } from "../hooks/useTheme";
 
@@ -84,34 +84,31 @@ const roleInfo = {
     },
 };
 
+const CHAT_ENABLED_ROLES: Role[] = ["admin", "registrar", "teacher", "parent"];
+
 const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
     const navigate = useNavigate();
     const info = roleInfo[role];
     const { theme, toggleTheme } = useTheme();
 
-    // User info from localStorage
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
     const displayName = user?.name || info.userName;
     const displayRole = user?.role || info.userRole;
 
-    // State
     const [unreadCount, setUnreadCount] = useState<number>(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotificationDropdown, setShowNotificationDropdown] = useState<boolean>(false);
     const [showUserDropdown, setShowUserDropdown] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
 
-    // ============================================
-    // 📡 FETCH UNREAD COUNT
-    // ============================================
+    const isChatEnabled = CHAT_ENABLED_ROLES.includes(role);
 
     const fetchUnreadCount = async (): Promise<void> => {
+        if (!isChatEnabled) return;
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get<{ success: boolean; data: { unread: number } }>(
-                'http://localhost:7000/api/messages/unread/count',
-                { headers: { Authorization: `Bearer ${token}` } }
+            const response = await apiClient.get<{ success: boolean; data: { unread: number } }>(
+                '/api/messages/unread/count'
             );
             setUnreadCount(response.data.data?.unread || 0);
         } catch (error) {
@@ -119,17 +116,12 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
         }
     };
 
-    // ============================================
-    // 📡 FETCH RECENT NOTIFICATIONS
-    // ============================================
-
     const fetchNotifications = async (): Promise<void> => {
+        if (!isChatEnabled) return;
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await axios.get<{ success: boolean; data: Notification[] }>(
-                'http://localhost:7000/api/messages/recent?limit=5',
-                { headers: { Authorization: `Bearer ${token}` } }
+            const response = await apiClient.get<{ success: boolean; data: Notification[] }>(
+                '/api/messages/recent?limit=5'
             );
             setNotifications(response.data.data || []);
             setLoading(false);
@@ -139,18 +131,10 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
         }
     };
 
-    // ============================================
-    // 📌 MARK ALL AS READ
-    // ============================================
-
     const markAllAsRead = async (): Promise<void> => {
+        if (!isChatEnabled) return;
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(
-                'http://localhost:7000/api/messages/read-all',
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await apiClient.put('/api/messages/read-all', {});
             setUnreadCount(0);
             setNotifications([]);
 
@@ -163,28 +147,16 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
         }
     };
 
-    // ============================================
-    // 📌 GO TO CHAT
-    // ============================================
-
     const goToChat = (): void => {
         setShowNotificationDropdown(false);
         navigate(info.chatPath);
     };
-
-    // ============================================
-    // 📌 HANDLE LOGOUT
-    // ============================================
 
     const handleLogout = (): void => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate("/");
     };
-
-    // ============================================
-    // 📌 FORMAT TIME
-    // ============================================
 
     const formatTime = (date: string): string => {
         const diff = Date.now() - new Date(date).getTime();
@@ -198,11 +170,13 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
         return `${days}d ago`;
     };
 
-    // ============================================
-    // 📡 SOCKET LISTENERS
-    // ============================================
-
     useEffect(() => {
+        if (!isChatEnabled) {
+            setUnreadCount(0);
+            setNotifications([]);
+            return;
+        }
+
         fetchUnreadCount();
         fetchNotifications();
 
@@ -221,7 +195,6 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
             });
         }
 
-        // Poll every 30 seconds as fallback
         const interval = setInterval(() => {
             fetchUnreadCount();
         }, 30000);
@@ -233,11 +206,7 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
                 socket.off('message:received');
             }
         };
-    }, []);
-
-    // ============================================
-    // 📌 GET ROLE COLOR
-    // ============================================
+    }, [isChatEnabled]);
 
     const getRoleColor = (role: string): string => {
         const colors: Record<string, string> = {
@@ -263,15 +232,8 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
         return emojis[role] || '👤';
     };
 
-    // ============================================
-    // 🎨 RENDER
-    // ============================================
-
     return (
         <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
-            {/* ============================================
-                LEFT SECTION - Title & Hamburger
-                ============================================ */}
             <div className="flex items-center gap-3 min-w-0">
                 <button
                     onClick={toggleSidebar}
@@ -291,12 +253,8 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
                 </div>
             </div>
 
-            {/* ============================================
-                RIGHT SECTION - Actions & User
-                ============================================ */}
             <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
 
-                {/* 🌙 Dark Mode Toggle */}
                 <button
                     onClick={toggleTheme}
                     className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
@@ -310,138 +268,135 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
                     )}
                 </button>
 
-                {/* 🔔 Chat Button */}
-                <Link
-                    to={info.chatPath}
-                    className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                    aria-label="Messages"
-                >
-                    <MessageCircle size={20} className="text-gray-600 dark:text-gray-300" />
-                    {unreadCount > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 animate-pulse">
-                            {unreadCount > 9 ? '9+' : unreadCount}
-                        </span>
-                    )}
-                </Link>
-
-                {/* 🔔 Notifications Dropdown */}
-                <div className="relative">
-                    <button
-                        onClick={() => {
-                            setShowNotificationDropdown(!showNotificationDropdown);
-                            if (!showNotificationDropdown) {
-                                fetchNotifications();
-                            }
-                            setShowUserDropdown(false);
-                        }}
+                {isChatEnabled && (
+                    <Link
+                        to={info.chatPath}
                         className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                        aria-label="Notifications"
+                        aria-label="Messages"
                     >
-                        <Bell size={20} className="text-gray-600 dark:text-gray-300" />
+                        <MessageCircle size={20} className="text-gray-600 dark:text-gray-300" />
                         {unreadCount > 0 && (
                             <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 animate-pulse">
                                 {unreadCount > 9 ? '9+' : unreadCount}
                             </span>
                         )}
-                    </button>
+                    </Link>
+                )}
 
-                    {/* Notification Dropdown */}
-                    {showNotificationDropdown && (
-                        <>
-                            <div
-                                className="fixed inset-0 z-40"
-                                onClick={() => setShowNotificationDropdown(false)}
-                            ></div>
-                            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
-                                {/* Header */}
-                                <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800">
-                                    <div className="flex items-center gap-2">
-                                        <Bell size={18} className="text-blue-600 dark:text-blue-400" />
-                                        <h3 className="font-semibold text-gray-800 dark:text-gray-100">Notifications</h3>
-                                        {unreadCount > 0 && (
-                                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                                {unreadCount} new
-                                            </span>
+                {isChatEnabled && (
+                    <div className="relative">
+                        <button
+                            onClick={() => {
+                                setShowNotificationDropdown(!showNotificationDropdown);
+                                if (!showNotificationDropdown) {
+                                    fetchNotifications();
+                                }
+                                setShowUserDropdown(false);
+                            }}
+                            className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                            aria-label="Notifications"
+                        >
+                            <Bell size={20} className="text-gray-600 dark:text-gray-300" />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 animate-pulse">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
+                        </button>
+
+                        {showNotificationDropdown && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-40"
+                                    onClick={() => setShowNotificationDropdown(false)}
+                                ></div>
+                                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
+                                    <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800">
+                                        <div className="flex items-center gap-2">
+                                            <Bell size={18} className="text-blue-600 dark:text-blue-400" />
+                                            <h3 className="font-semibold text-gray-800 dark:text-gray-100">Notifications</h3>
+                                            {unreadCount > 0 && (
+                                                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                                    {unreadCount} new
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {unreadCount > 0 && (
+                                                <button
+                                                    onClick={markAllAsRead}
+                                                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center gap-1"
+                                                >
+                                                    <Check size={14} />
+                                                    Mark all read
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => setShowNotificationDropdown(false)}
+                                                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                                            >
+                                                <X size={14} className="text-gray-400 dark:text-gray-500" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="max-h-80 overflow-y-auto">
+                                        {loading ? (
+                                            <div className="p-8 text-center text-gray-400 dark:text-gray-500">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                                                <p className="text-sm">Loading...</p>
+                                            </div>
+                                        ) : notifications.length === 0 ? (
+                                            <div className="p-8 text-center text-gray-400 dark:text-gray-500">
+                                                <Bell size={32} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                                                <p className="text-sm">No new notifications</p>
+                                            </div>
+                                        ) : (
+                                            notifications.map((notif) => (
+                                                <div
+                                                    key={notif._id}
+                                                    className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700 transition cursor-pointer flex items-start gap-3 ${!notif.isRead ? 'bg-blue-50 dark:bg-gray-700' : ''
+                                                        }`}
+                                                    onClick={goToChat}
+                                                >
+                                                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${getRoleColor(notif.senderId?.role || '')}`}>
+                                                        {notif.senderId?.name?.charAt(0) || 'U'}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm text-gray-800 dark:text-gray-100">
+                                                            <span className="font-medium">{notif.senderId?.name || 'Unknown'}</span>
+                                                            <span className="text-gray-600 dark:text-gray-300"> sent you a message</span>
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                            {notif.content}
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                                                            {formatTime(notif.createdAt)}
+                                                        </p>
+                                                    </div>
+                                                    {!notif.isRead && (
+                                                        <span className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></span>
+                                                    )}
+                                                </div>
+                                            ))
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        {unreadCount > 0 && (
-                                            <button
-                                                onClick={markAllAsRead}
-                                                className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center gap-1"
-                                            >
-                                                <Check size={14} />
-                                                Mark all read
-                                            </button>
-                                        )}
+
+                                    <div className="p-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                         <button
-                                            onClick={() => setShowNotificationDropdown(false)}
-                                            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                                            onClick={goToChat}
+                                            className="w-full text-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center justify-center gap-2"
                                         >
-                                            <X size={14} className="text-gray-400 dark:text-gray-500" />
+                                            <MessageCircle size={16} />
+                                            View All Messages
                                         </button>
                                     </div>
                                 </div>
+                            </>
+                        )}
+                    </div>
+                )}
 
-                                {/* Notification List */}
-                                <div className="max-h-80 overflow-y-auto">
-                                    {loading ? (
-                                        <div className="p-8 text-center text-gray-400 dark:text-gray-500">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
-                                            <p className="text-sm">Loading...</p>
-                                        </div>
-                                    ) : notifications.length === 0 ? (
-                                        <div className="p-8 text-center text-gray-400 dark:text-gray-500">
-                                            <Bell size={32} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                                            <p className="text-sm">No new notifications</p>
-                                        </div>
-                                    ) : (
-                                        notifications.map((notif) => (
-                                            <div
-                                                key={notif._id}
-                                                className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700 transition cursor-pointer flex items-start gap-3 ${!notif.isRead ? 'bg-blue-50 dark:bg-gray-700' : ''
-                                                    }`}
-                                                onClick={goToChat}
-                                            >
-                                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${getRoleColor(notif.senderId?.role || '')}`}>
-                                                    {notif.senderId?.name?.charAt(0) || 'U'}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm text-gray-800 dark:text-gray-100">
-                                                        <span className="font-medium">{notif.senderId?.name || 'Unknown'}</span>
-                                                        <span className="text-gray-600 dark:text-gray-300"> sent you a message</span>
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                        {notif.content}
-                                                    </p>
-                                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
-                                                        {formatTime(notif.createdAt)}
-                                                    </p>
-                                                </div>
-                                                {!notif.isRead && (
-                                                    <span className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></span>
-                                                )}
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-
-                                {/* Footer */}
-                                <div className="p-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                                    <button
-                                        onClick={goToChat}
-                                        className="w-full text-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center justify-center gap-2"
-                                    >
-                                        <MessageCircle size={16} />
-                                        View All Messages
-                                    </button>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-
-                {/* 👤 User Profile Dropdown */}
                 <div className="relative">
                     <button
                         onClick={() => {
@@ -457,7 +412,6 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
                         <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 hidden sm:block" />
                     </button>
 
-                    {/* User Dropdown */}
                     {showUserDropdown && (
                         <>
                             <div
@@ -465,7 +419,6 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
                                 onClick={() => setShowUserDropdown(false)}
                             ></div>
                             <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
-                                {/* User Info */}
                                 <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800">
                                     <div className="flex items-center gap-3">
                                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xl font-bold shadow-md">
@@ -483,7 +436,6 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
                                     </div>
                                 </div>
 
-                                {/* Menu Items */}
                                 <div className="py-2">
                                     <Link
                                         to={`/${role}/profile`}
@@ -501,19 +453,21 @@ const Navbar = ({ role, toggleSidebar }: NavbarProps) => {
                                         <Settings size={16} className="text-gray-400 dark:text-gray-500" />
                                         Settings
                                     </Link>
-                                    <Link
-                                        to={`/${role}/chat`}
-                                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm text-gray-700 dark:text-gray-200"
-                                        onClick={() => setShowUserDropdown(false)}
-                                    >
-                                        <MessageCircle size={16} className="text-gray-400 dark:text-gray-500" />
-                                        Messages
-                                        {unreadCount > 0 && (
-                                            <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                                {unreadCount}
-                                            </span>
-                                        )}
-                                    </Link>
+                                    {isChatEnabled && (
+                                        <Link
+                                            to={`/${role}/chat`}
+                                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm text-gray-700 dark:text-gray-200"
+                                            onClick={() => setShowUserDropdown(false)}
+                                        >
+                                            <MessageCircle size={16} className="text-gray-400 dark:text-gray-500" />
+                                            Messages
+                                            {unreadCount > 0 && (
+                                                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                                    {unreadCount}
+                                                </span>
+                                            )}
+                                        </Link>
+                                    )}
                                     <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
                                     <button
                                         onClick={() => {

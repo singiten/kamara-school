@@ -3,8 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, ArrowLeft, AlertCircle, CheckCircle, GraduationCap, Sparkles } from "lucide-react";
 import { apiClient } from "../config/api";
 
-const SCHOOL_LOGO = 'src/assets/logo.png';
-const SCHOOL_NAME = 'Elevate Skills Academy';
+import schoolLogo from '../assets/logo.png';
+const SCHOOL_NAME = 'Kamara School';
 const SCHOOL_TAGLINE = 'Empowering Ethiopian Futures';
 
 const ForgotPassword = () => {
@@ -41,10 +41,10 @@ const ForgotPassword = () => {
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl max-w-md w-full p-8 border border-white/20 dark:border-gray-700">
                 <div className="text-center mb-6">
                     <div className="flex items-center justify-center gap-3 mb-3">
-                        {SCHOOL_LOGO ? (
+                        {schoolLogo ? (
                             <img
-                                src={SCHOOL_LOGO}
-                                alt={SCHOOL_NAME}
+                                src={schoolLogo}
+                                alt={schoolLogo}
                                 className="w-14 h-14 rounded-2xl object-cover shadow-lg"
                             />
                         ) : (
