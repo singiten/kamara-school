@@ -1,6 +1,6 @@
 // src/pages/admin/AdminAnnouncements.tsx - ENHANCED UI
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, JSX } from "react";
 import {
     Plus, Megaphone, CheckCircle, Clock, X, Calendar, Users,
     Edit2, Trash2, Eye, EyeOff, Send, Bell, Sparkles,
