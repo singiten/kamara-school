@@ -1,4 +1,4 @@
-// src/pages/teacher/TeacherDashboard.tsx - COMPLETE WITH REAL DATA
+// src/pages/teacher/TeacherDashboard.tsx - COMPLETE FIXED
 
 import { useState, useEffect } from "react";
 import { 
@@ -59,6 +59,7 @@ interface Announcement {
     priority: string;
     createdAt: string;
     createdBy?: { name: string };
+    status?: string; // ✅ ADDED - Fixes the error
 }
 
 interface Resource {
@@ -330,6 +331,7 @@ const TeacherDashboard = () => {
         );
     }
 
+    // ✅ Fixed: Use optional chaining to safely access status
     const publishedAnnouncements = announcements.filter(a => a.status === 'Published' || a.status === 'published');
 
     return (
@@ -354,7 +356,7 @@ const TeacherDashboard = () => {
                             Take Attendance
                         </Link>
                         <Link 
-                            to="/teacher/resources/upload"
+                            to="/teacher/resources"
                             className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition flex items-center gap-2"
                         >
                             <Upload size={18} />

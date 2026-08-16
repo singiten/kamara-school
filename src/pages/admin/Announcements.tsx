@@ -1,6 +1,6 @@
 // src/pages/admin/AdminAnnouncements.tsx - ENHANCED UI
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Plus, Megaphone, CheckCircle, Clock, X, Calendar, Users,
     Edit2, Trash2, Eye, EyeOff, Send, Bell, Sparkles,
@@ -51,7 +51,7 @@ const PRIORITY_STYLES: Record<string, { bg: string; text: string; border: string
     Urgent: { bg: "bg-red-100", text: "text-red-600", border: "border-red-300", icon: "🚨" },
 };
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; icon: JSX.Element }> = {
+const STATUS_STYLES: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
     Published: { bg: "bg-green-100", text: "text-green-700", icon: <CheckCircle size={14} /> },
     Draft: { bg: "bg-gray-100", text: "text-gray-600", icon: <Clock size={14} /> },
     Archived: { bg: "bg-gray-100", text: "text-gray-400", icon: <EyeOff size={14} /> },
