@@ -1,4 +1,0 @@
-# .gitignore - Files that should NEVER be pushed to GitHub
-node_modules/
-.env
-.DS_Store
